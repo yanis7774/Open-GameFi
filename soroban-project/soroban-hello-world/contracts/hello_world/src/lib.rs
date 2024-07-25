@@ -1,142 +1,108 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, token, unwrap::UnwrapOptimized, Address, symbol_short, vec, Env, Symbol, Vec};
+
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, token::Client as TokenClient, Address, BytesN, Env
+};
 
 #[derive(Clone)]
 #[contracttype]
+pub struct BalanceInfo {
+    pub token: Address,
+    pub amount: i128,
+    pub base_withdrawal_limit: i128
+}
+
+#[contracttype]
+#[derive(Clone)]
 pub enum DataKey {
-    Offer,
+    Balance(Address),
 }
 
 #[derive(Clone)]
 #[contracttype]
-pub struct Offer {
-    // Owner of this offer. Sells sell_token to get buy_token.
-    pub seller: Address,
-    pub sell_token: Address,
-    pub buy_token: Address,
-    // Seller-defined price of the sell token in arbitrary units.
-    pub sell_price: u32,
-    // Seller-defined price of the buy token in arbitrary units.
-    pub buy_price: u32,
+pub struct AccSignature {
+    pub public_key: BytesN<32>,
+    pub signature: BytesN<64>,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum AccError {
+    NotEnoughSigners = 1,
+    InvalidSignature = 2,
+    InvalidContext = 3,
+    InsufficientFunds = 4,
+    WithdrawalLimitExceeded = 5,
+    UnknownSigner = 6,
+    SerializationError = 7,
 }
 
 #[contract]
-pub struct HelloContract;
+pub struct CustomAccountContract;
 
 #[contractimpl]
-impl HelloContract {
-    pub fn hello(env: Env, to: Symbol) -> Vec<Symbol> {
-        vec![&env, symbol_short!("Hello"), to]
-    }
-
-    pub fn create(
-        e: Env,
-        seller: Address,
-        sell_token: Address,
-        buy_token: Address,
-        sell_price: u32,
-        buy_price: u32,
-    ) {
-        if e.storage().instance().has(&DataKey::Offer) {
-            panic!("offer is already created");
-        }
-        if buy_price == 0 || sell_price == 0 {
-            panic!("zero price is not allowed");
-        }
-        // Authorize the `create` call by seller to verify their identity.
-        seller.require_auth();
-        write_offer(
-            &e,
-            &Offer {
-                seller,
-                sell_token,
-                buy_token,
-                sell_price,
-                buy_price,
-            },
-        );
-    }
-
-    pub fn trade(e: Env, buyer: Address, buy_token_amount: i128, min_sell_token_amount: i128) {
-        // Buyer needs to authorize the trade.
-        buyer.require_auth();
-
-        // Load the offer and prepare the token clients to do the trade.
-        let offer = load_offer(&e);
-        let sell_token_client = token::Client::new(&e, &offer.sell_token);
-        let buy_token_client = token::Client::new(&e, &offer.buy_token);
-
-        // Compute the amount of token that buyer needs to receive.
-        let sell_token_amount = buy_token_amount
-            .checked_mul(offer.sell_price as i128)
-            .unwrap_optimized()
-            / offer.buy_price as i128;
-
-        if sell_token_amount < min_sell_token_amount {
-            panic!("price is too low");
-        }
-
-        let contract = e.current_contract_address();
-
-        // Perform the trade in 3 `transfer` steps.
-        // Note, that we don't need to verify any balances - the contract would
-        // just trap and roll back in case if any of the transfers fails for
-        // any reason, including insufficient balance.
-
-        // Transfer the `buy_token` from buyer to this contract.
-        // This `transfer` call should be authorized by buyer.
-        // This could as well be a direct transfer to the seller, but sending to
-        // the contract address allows building more transparent signature
-        // payload where the buyer doesn't need to worry about sending token to
-        // some 'unknown' third party.
-        buy_token_client.transfer(&buyer, &contract, &buy_token_amount);
-        // Transfer the `sell_token` from contract to buyer.
-        sell_token_client.transfer(&contract, &buyer, &sell_token_amount);
-        // Transfer the `buy_token` to the seller immediately.
-        buy_token_client.transfer(&contract, &offer.seller, &buy_token_amount);
-    }
-
-    // Sends amount of token from this contract to the seller.
-    // This is intentionally flexible so that the seller can withdraw any
-    // outstanding balance of the contract (in case if they mistakenly
-    // transferred wrong token to it).
-    // Must be authorized by seller.
-
-    pub fn withdraw(e: Env, token: Address, amount: i128) {
-        let offer = load_offer(&e);
-        offer.seller.require_auth();
-        token::Client::new(&e, &token).transfer(
-            &e.current_contract_address(),
-            &offer.seller,
-            &amount,
-        );
-    }
-
-    // Updates the price.
-    // Must be authorized by seller.
-    pub fn updt_price(e: Env, sell_price: u32, buy_price: u32) {
-        if buy_price == 0 || sell_price == 0 {
-            panic!("zero price is not allowed");
-        }
-        let mut offer = load_offer(&e);
-        offer.seller.require_auth();
-        offer.sell_price = sell_price;
-        offer.buy_price = buy_price;
-        write_offer(&e, &offer);
-    }
-
-    pub fn get_offer(e: Env) -> Offer {
-        load_offer(&e)
-    }
+impl CustomAccountContract {
     
-}
+    pub fn deposit(env: Env, from: Address, token: Address, amount: i128, base_withdrawal_limit: i128) -> Result<BalanceInfo, AccError> {
+        from.require_auth();
 
-fn load_offer(e: &Env) -> Offer {
-    e.storage().instance().get(&DataKey::Offer).unwrap()
-}
+        // Transfer token from `from` to this contract.
+        TokenClient::new(&env, &token).transfer(&from, &env.current_contract_address(), &amount);
 
-fn write_offer(e: &Env, offer: &Offer) {
-    e.storage().instance().set(&DataKey::Offer, offer);
-}
+        // Create a unique identifier for this balance entry.
+        //let balance_id = CustomAccountContract::get_counter(&env);
+        //CustomAccountContract::set_counter(&env, balance_id+1);
 
-mod test;
+        // Retrieve or initialize balance information.
+        let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(from.clone()))
+            .unwrap_or(BalanceInfo{
+                token: token.clone(),
+                amount: 0,
+                base_withdrawal_limit: 1000000000,
+            });
+
+
+        // Update the balance.
+        balance.amount += amount;
+        balance.base_withdrawal_limit = base_withdrawal_limit;
+
+        // Store the updated balance.
+        env.storage().instance().set(&DataKey::Balance(from.clone()), &balance);
+
+        //Ok(balance_id)
+        Ok(balance)
+    }
+
+    pub fn withdraw(env: Env, to: Address, amount: i128) -> Result<BalanceInfo, AccError> {
+        // Require the current contract to authorize the withdrawal.
+        to.require_auth();
+
+        // Retrieve balance information.
+        let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(to.clone()))
+            .ok_or(AccError::InsufficientFunds)?;
+
+        // Check if the balance is sufficient.
+        if amount > balance.amount {
+            return Err(AccError::InsufficientFunds);
+        }
+
+        // Update the balance.
+        balance.amount -= amount;
+        env.storage().instance().set(&DataKey::Balance(to.clone()), &balance);
+
+        // Transfer the token to the `to` address.
+        TokenClient::new(&env, &balance.token).transfer(&env.current_contract_address(), &to, &amount);
+
+        Ok(balance)
+    }
+
+    pub fn get_balance(env: Env, address_check: Address) -> Result<i128, AccError> {
+        if let Some(balance) = env.storage().instance().get::<DataKey, BalanceInfo>(&DataKey::Balance(address_check.clone())) {
+            Ok(balance.amount)
+        } else {
+            // Return 0 if no key is present
+            Ok(0)
+        }
+    }
+}

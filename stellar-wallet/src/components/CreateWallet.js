@@ -4,7 +4,7 @@ import { useRoom } from '../backendConnection/roomContext';
 import { useWallet } from '../WalletContext';
 
 const CreateWallet = ({ onCreate }) => {
-  const { publicKey, secretKey, mnemonicPhrase } = useWallet();
+  const { publicKey, secretKey, mnemonicPhrase, balance } = useWallet();
   const { sendMessage } = useRoom();
 
   const handleCreate = () => {
@@ -19,6 +19,7 @@ const CreateWallet = ({ onCreate }) => {
           <p>Public Key: {publicKey}</p>
           <p>Secret: {secretKey}</p>
           <p>Mnemonic: {mnemonicPhrase}</p>
+          <p>Local Balance: {balance}</p>
         </div>
       )}
     </div>

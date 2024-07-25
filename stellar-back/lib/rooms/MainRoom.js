@@ -14,10 +14,14 @@ const colyseus_1 = require("colyseus");
 const MainRoomState_1 = require("./schema/MainRoomState");
 const stellar_sdk_1 = require("stellar-sdk");
 const dbUtils_1 = require("../db/dbUtils");
+//import { Server } from "@stellar/stellar-sdk/lib/horizon";
 const bip39 = require('bip39');
 const StellarHDWallet = require('stellar-hd-wallet');
 const bcrypt = require('bcrypt');
+const axios = require('axios');
 const saltRounds = 10;
+const xmlConversion = 10000000;
+const WithdrawalLimit = 10000;
 class MainRoom extends colyseus_1.Room {
     onCreate(options) {
         this.setState(new MainRoomState_1.MainRoomState());
@@ -55,12 +59,14 @@ class MainRoom extends colyseus_1.Room {
         }));
         this.onMessage("login", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             const userToLogin = yield (0, dbUtils_1.getUser)(msg.login);
+            client.send("systemMessage", "Logging in process...");
             if (userToLogin) {
                 if (yield bcrypt.compare(msg.password, userToLogin.password)) {
                     client.send("connectWallet", {
                         publicKey: userToLogin.publicId,
                         secretKey: userToLogin.secretId,
-                        mnemonic: userToLogin.mnemonic
+                        mnemonic: userToLogin.mnemonic,
+                        balance: yield this.getBalance(userToLogin.secretId)
                     });
                     client.send("systemMessage", "Login Successful!");
                 }
@@ -71,6 +77,16 @@ class MainRoom extends colyseus_1.Room {
             else {
                 client.send("systemMessage", "Username or password is wrong");
             }
+        }));
+        this.onMessage("withdrawWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
+            client.send("systemMessage", "Withdrawing...");
+            const res = yield this.withdrawBalance(msg.secret, Number(msg.amount));
+            client.send("balanceUpdate", { balance: res, systemMessage: "Withdraw success!" });
+        }));
+        this.onMessage("depositWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
+            client.send("systemMessage", "Depositing...");
+            const res = yield this.depositBalance(msg.secret, Number(msg.amount));
+            client.send("balanceUpdate", { balance: res, systemMessage: "Deposit success!" });
         }));
         this.onMessage("register", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             const userExists = yield (0, dbUtils_1.getUser)(msg.login);
@@ -83,9 +99,115 @@ class MainRoom extends colyseus_1.Room {
                 const publicKey = wallet.getPublicKey(0);
                 const secretKey = wallet.getSecret(0);
                 yield (0, dbUtils_1.initUser)(msg.login, yield bcrypt.hash(msg.password, saltRounds), publicKey, secretKey, mnemonic);
+                const horizonUrl = 'https://horizon-testnet.stellar.org';
+                //const server = new Server('https://horizon-testnet.stellar.org');
+                const friendbotUrl = `https://friendbot.stellar.org?addr=${publicKey}`;
+                axios.get(friendbotUrl)
+                    .then((response) => {
+                    console.log('Account created and funded!');
+                    //return server.loadAccount(publicKey);
+                })
+                    .then((account) => {
+                    console.log('Account loaded successfully:', account);
+                })
+                    .catch((error) => {
+                    console.error('Error creating or funding account:', error);
+                });
                 client.send("systemMessage", "User created, login to see your public wallet");
             }
         }));
+    }
+    depositBalance(secretKey, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Starting deposit function");
+            const sourceKeypair = stellar_sdk_1.Keypair.fromSecret(secretKey);
+            const contract = new stellar_sdk_1.Contract(process.env.CONTRACT);
+            const tokenContract = new stellar_sdk_1.Contract(process.env.TOKEN);
+            const res = yield this.invokeContract(secretKey, contract.call("deposit", stellar_sdk_1.xdr.ScVal.scvAddress(stellar_sdk_1.xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), stellar_sdk_1.xdr.ScVal.scvAddress(tokenContract.address().toScAddress()), createI128(xmlConversion * amount), createI128(xmlConversion * WithdrawalLimit)));
+            return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / xmlConversion;
+        });
+    }
+    withdrawBalance(secretKey, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Starting deposit function");
+            const sourceKeypair = stellar_sdk_1.Keypair.fromSecret(secretKey);
+            const contract = new stellar_sdk_1.Contract(process.env.CONTRACT);
+            const res = yield this.invokeContract(secretKey, contract.call("withdraw", stellar_sdk_1.xdr.ScVal.scvAddress(stellar_sdk_1.xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), createI128(xmlConversion * amount)));
+            return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / xmlConversion;
+        });
+    }
+    getBalance(secretKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log("Starting get balance function");
+            const sourceKeypair = stellar_sdk_1.Keypair.fromSecret(secretKey);
+            const contract = new stellar_sdk_1.Contract(process.env.CONTRACT);
+            const res = yield this.invokeContract(secretKey, contract.call("get_balance", stellar_sdk_1.xdr.ScVal.scvAddress(stellar_sdk_1.xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey()))));
+            return Number(res["_value._attributes.lo._value"]) / xmlConversion;
+        });
+    }
+    invokeContract(secret, invoke) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const sourceKeypair = stellar_sdk_1.Keypair.fromSecret(secret);
+            console.log(`Starting contract invoke, making server, using ${secret}`);
+            const server = new stellar_sdk_1.SorobanRpc.Server("https://soroban-testnet.stellar.org");
+            console.log("Making source account");
+            let sourceAccount = undefined;
+            try {
+                sourceAccount = yield server.getAccount(sourceKeypair.publicKey());
+            }
+            catch (e) {
+                console.log(`ERROR: ${e}`);
+            }
+            console.log("Source account created, building transaction");
+            let builtTransaction = new stellar_sdk_1.TransactionBuilder(sourceAccount, {
+                fee: stellar_sdk_1.BASE_FEE,
+                networkPassphrase: stellar_sdk_1.Networks.TESTNET,
+            }).addOperation(invoke)
+                .setTimeout(30)
+                .build();
+            let preparedTransaction = yield server.prepareTransaction(builtTransaction);
+            preparedTransaction.sign(sourceKeypair);
+            try {
+                let sendResponse = yield server.sendTransaction(preparedTransaction);
+                if (sendResponse.status === "PENDING") {
+                    let getResponse = yield server.getTransaction(sendResponse.hash);
+                    // Poll `getTransaction` until the status is not "NOT_FOUND"
+                    while (getResponse.status === "NOT_FOUND") {
+                        console.log("Waiting for transaction confirmation...");
+                        // See if the transaction is complete
+                        getResponse = yield server.getTransaction(sendResponse.hash);
+                        // Wait one second
+                        yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                    //console.log(`getTransaction response: ${JSON.stringify(getResponse)}`);
+                    if (getResponse.status === "SUCCESS") {
+                        // Make sure the transaction's resultMetaXDR is not empty
+                        if (!getResponse.resultMetaXdr) {
+                            throw "Empty resultMetaXDR in getTransaction response";
+                        }
+                        // Find the return value from the contract and return it
+                        //let transactionMeta = getResponse.resultMetaXdr;
+                        const result = parseResponse(getResponse.returnValue);
+                        console.log(`RES: ${result}`);
+                        return result;
+                    }
+                    else {
+                        console.log(`Transaction failed: ${getResponse.resultXdr}`);
+                        return undefined;
+                    }
+                }
+                else {
+                    console.log(`Transaction failed: ${sendResponse.errorResult}`);
+                    return undefined;
+                }
+            }
+            catch (err) {
+                // Catch and report any errors we've thrown
+                console.log("Sending transaction failed");
+                console.log(JSON.stringify(err));
+                return undefined;
+            }
+        });
     }
     setUp(room) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -114,3 +236,28 @@ class MainRoom extends colyseus_1.Room {
     }
 }
 exports.MainRoom = MainRoom;
+function parseResponse(response) {
+    const result = {};
+    function parseObject(obj, prefix = '') {
+        for (const [key, value] of Object.entries(obj)) {
+            const fullKey = prefix ? `${prefix}.${key}` : key;
+            if (typeof value === 'object' && value !== null) {
+                parseObject(value, fullKey);
+            }
+            else {
+                console.log(`KEY: ${fullKey}, VALUE: ${value}`);
+                result[fullKey] = value;
+            }
+        }
+    }
+    parseObject(response);
+    return result;
+}
+function createI128(value) {
+    const high = Math.floor(value / Math.pow(2, 64));
+    const low = value % Math.pow(2, 64);
+    return stellar_sdk_1.xdr.ScVal.scvI128(new stellar_sdk_1.xdr.Int128Parts({
+        hi: stellar_sdk_1.xdr.Int64.fromString(high.toString()),
+        lo: stellar_sdk_1.xdr.Uint64.fromString(low.toString()),
+    }));
+}

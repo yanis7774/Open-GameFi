@@ -4,27 +4,39 @@ import { useWallet } from '../WalletContext';
 import { useRoom } from '../backendConnection/roomContext';
 
 const ConnectWallet = ({ onConnect }) => {
-  const [secret, setSecret] = useState('');
+  const [amount, setAmount] = useState('');
   const { sendMessage } = useRoom();
-  const { publicKey } = useWallet();
+  const { publicKey, secretKey } = useWallet();
 
-  const handleConnect = () => {
-    sendMessage("connectWallet",{mnemonic: secret})
+  const handleDeposit = () => {
+    sendMessage("depositWallet",{
+      amount: amount,
+      secret: secretKey
+    });
+  };
+  const handleWithdraw = () => {
+    sendMessage("withdrawWallet",{
+      amount: amount,
+      secret: secretKey
+    });
   };
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Enter Mnemonic"
-        value={secret}
-        onChange={(e) => setSecret(e.target.value)}
-      />
-      <button onClick={handleConnect}>Connect Wallet</button>
       {publicKey && (
         <div>
-          <p>Connected Public Key: {publicKey}</p>
-          <QRCode value={publicKey} />
+          <input
+          type="text"
+          placeholder="Enter Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          />
+          <button onClick={handleDeposit}>Deposit</button>
+          <button onClick={handleWithdraw}>Withdraw</button>
+          <div>
+            <p>Connected Public Key: {publicKey}</p>
+            <QRCode value={publicKey} />
+          </div>
         </div>
       )}
     </div>
