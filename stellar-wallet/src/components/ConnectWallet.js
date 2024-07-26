@@ -20,6 +20,11 @@ const ConnectWallet = ({ onConnect }) => {
       secret: secretKey
     });
   };
+  const handleReward = () => {
+    sendMessage("rewardWallet",{
+      secret: secretKey
+    })
+  }
 
   return (
     <div>
@@ -33,6 +38,7 @@ const ConnectWallet = ({ onConnect }) => {
           />
           <button onClick={handleDeposit}>Deposit</button>
           <button onClick={handleWithdraw}>Withdraw</button>
+          <button onClick={handleReward}>Reward</button>
           <div>
             <p>Connected Public Key: {publicKey}</p>
             <QRCode value={publicKey} />

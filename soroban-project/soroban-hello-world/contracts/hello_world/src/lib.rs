@@ -1,7 +1,7 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, token::Client as TokenClient, Address, BytesN, Env
+    contract, contracterror, contractimpl, contracttype, token::Client as TokenClient, Address, Env
 };
 
 #[derive(Clone)]
@@ -12,17 +12,22 @@ pub struct BalanceInfo {
     pub base_withdrawal_limit: i128
 }
 
+#[derive(Clone)]
+#[contracttype]
+pub struct RewardInfo {
+    pub amount: i128,
+}
+
 #[contracttype]
 #[derive(Clone)]
 pub enum DataKey {
     Balance(Address),
 }
 
-#[derive(Clone)]
 #[contracttype]
-pub struct AccSignature {
-    pub public_key: BytesN<32>,
-    pub signature: BytesN<64>,
+#[derive(Clone)]
+pub enum Rewards {
+    Redeemed(Address)
 }
 
 #[contracterror]
@@ -95,6 +100,33 @@ impl CustomAccountContract {
         TokenClient::new(&env, &balance.token).transfer(&env.current_contract_address(), &to, &amount);
 
         Ok(balance)
+    }
+
+    pub fn activate_reward(env: Env, reward_address: Address) -> Result<i128, AccError>{
+        reward_address.require_auth();
+
+        // Retrieve balance information.
+        let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(reward_address.clone()))
+            .ok_or(AccError::InsufficientFunds)?;
+
+        // Check if the balance is sufficient.
+        if balance.amount < 100000000 {
+            return Err(AccError::InsufficientFunds);
+        }
+
+        // Update the balance.
+        balance.amount -= 100000000;
+        env.storage().instance().set(&DataKey::Balance(reward_address.clone()), &balance);
+
+        let mut reward: RewardInfo = env.storage().instance().get(&Rewards::Redeemed(reward_address.clone()))
+            .unwrap_or(RewardInfo{
+                amount: 0
+            });
+
+        reward.amount+=1;
+        env.storage().instance().set(&Rewards::Redeemed(reward_address.clone()), &reward);
+
+        Ok(reward.amount)
     }
 
     pub fn get_balance(env: Env, address_check: Address) -> Result<i128, AccError> {

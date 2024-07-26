@@ -14,15 +14,11 @@ function App() {
   const { userMessage } = useUser();
 
   const handleCreate = (wallet) => {
-    // Create script
+    //
   };
 
   const handleConnect = (secret) => {
-    /*
-    const pubKey = connectWallet(secret);
-    setPublicKey(pubKey);
-    return pubKey;
-    */
+    //
   };
 
   return (
