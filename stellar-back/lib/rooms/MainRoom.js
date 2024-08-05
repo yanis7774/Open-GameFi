@@ -171,7 +171,7 @@ class MainRoom extends colyseus_1.Room {
             const res = yield this.invokeContract(secretKey, contract.call("activate_reward", // Function name
             stellar_sdk_1.xdr.ScVal.scvAddress(stellar_sdk_1.xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())) // Public key
             ));
-            return Number(res["_value._attributes.lo._value"]) / xmlConversion;
+            return Number(res["_value._attributes.lo._value"]);
         });
     }
     invokeContract(secret, invoke) {
