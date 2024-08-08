@@ -1,0 +1,38 @@
+{
+  "name": "open-gamefi-addon",
+  "version": "0.0.1",
+  "description": "Simple library to call contracts and operate blockchain networks. Part of Open-GameFi starter kit\n\n",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yanis7774/Open-GameFi"
+  },
+  "author": "yanis7774",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/cors": "2.8.17",
+    "@types/express": "^4.17.21",
+    "ts-node": "^8.10.2",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "1.6.2",
+    "bip39": "^3.1.0",
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "hnswlib-node": "^1.4.2",
+    "path": "^0.12.7",
+    "stellar-hd-wallet": "^0.0.10",
+    "stellar-sdk": "^12.2.0"
+  }
+}

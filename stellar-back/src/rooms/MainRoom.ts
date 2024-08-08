@@ -1,6 +1,6 @@
 import { Client, Room } from "colyseus";
-import { MainRoomState } from "./schema/MainRoomState";
-import { getUser, initUser } from "../db/dbUtils";
+import { MainRoomState, Player } from "./schema/MainRoomState";
+import { getUser, initUser, saveUserToDb } from "../db/dbUtils";
 import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, rewardWallet, withdrawBalance } from "open-gamefi-module";
 //import { Server } from "@stellar/stellar-sdk/lib/horizon";
 const bcrypt = require('bcrypt');
@@ -14,6 +14,17 @@ export class MainRoom extends Room<MainRoomState> {
         this.setUp(this);
         this.setSeatReservationTime(60);
         this.maxClients = 100;
+
+        setInterval(()=>{
+            this.state.users.forEach((player: Player)=>{
+                player.currency += player.generators * (1+player.user.reward);
+                player.client.send("updateClicker",{
+                    currency: player.currency,
+                    generators: player.generators,
+                    rewards: player.user.reward
+                })
+            })
+        },1000)
 
         this.onMessage("createWallet", async (client, msg) => {
             // This creates a mnemonic phrase first
@@ -48,23 +59,38 @@ export class MainRoom extends Room<MainRoomState> {
         });
 
         this.onMessage("login", async (client, msg) => {
-            const userToLogin = await getUser(msg.login);
-            client.send("systemMessage","Logging in process...");
-            if (userToLogin) {
-                // sent password is compared using bcrypt with the one in database
-                if (await bcrypt.compare(msg.password, userToLogin.password)) {
-                    client.send("connectWallet",{
-                        publicKey: userToLogin.publicId,
-                        secretKey: userToLogin.secretId,
-                        mnemonic: userToLogin.mnemonic,
-                        balance: await getBalance(userToLogin.secretId)
-                    });
-                    client.send("systemMessage","Login Successful!");
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user == undefined) {
+                const userToLogin = await getUser(msg.login);
+                client.send("systemMessage","Logging in process...");
+                if (userToLogin) {
+                    // sent password is compared using bcrypt with the one in database
+                    if (await bcrypt.compare(msg.password, userToLogin.password)) {
+                        userState.user = userToLogin;
+                        userState.currency = userToLogin.currency;
+                        userState.generators = userToLogin.generators;
+                        const now = new Date();
+                        userState.currency += ((now.getTime() - userState.user.lastPresence.getTime())/1000) * (userState.generators) * (1 + userState.user.reward);
+                        userState.user.lastPresence = now;
+                        await saveUserToDb(userState.user);
+                        client.send("connectWallet",{
+                            publicKey: userToLogin.publicId,
+                            secretKey: userToLogin.secretId,
+                            mnemonic: userToLogin.mnemonic,
+                            balance: await getBalance(userToLogin.secretId)
+                        });
+                        client.send("updateClicker",{
+                            currency: userState.currency,
+                            generators: userState.generators,
+                            rewards: userState.user.reward
+                        });
+                        client.send("systemMessage","Login Successful!");
+                    } else {
+                        client.send("systemMessage","Username or password is wrong");
+                    }
                 } else {
                     client.send("systemMessage","Username or password is wrong");
                 }
-            } else {
-                client.send("systemMessage","Username or password is wrong");
             }
         });
 
@@ -84,6 +110,9 @@ export class MainRoom extends Room<MainRoomState> {
             client.send("systemMessage","Rewarding...");
             const res = await rewardWallet(msg.secret);
             const balance = await getBalance(msg.secret);
+            let userState = this.state.users.get(client.sessionId);
+            userState.user.reward = res;
+            await saveUserToDb(userState.user);
             client.send("balanceUpdate",{balance: balance, systemMessage: `Reward success! You have ${res} rewards!`});
         });
 
@@ -97,6 +126,33 @@ export class MainRoom extends Room<MainRoomState> {
                 client.send("systemMessage","User created, login to see your public wallet");
             }
         })
+
+        this.onMessage("click", async (client, msg) => {
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user != undefined) {
+                userState.currency+=(1 + userState.user.reward);
+                client.send("updateClicker",{
+                    currency: userState.currency,
+                    generators: userState.generators,
+                    rewards: userState.user.reward
+                })
+            }
+        })
+
+        this.onMessage("buyGenerator", async (client, msg) => {
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user != undefined) {
+                if (userState.currency >= this.getGeneratorCost(userState.generators)) {
+                    userState.currency -= this.getGeneratorCost(userState.generators);
+                    userState.generators++;
+                }
+                client.send("updateClicker",{
+                    currency: userState.currency,
+                    generators: userState.generators,
+                    rewards: userState.user.reward
+                })
+            }
+        })
     }
 
     async setUp(room: Room) {
@@ -108,15 +164,30 @@ export class MainRoom extends Room<MainRoomState> {
     }
 
     async onJoin(client: Client, options: any) {
+        if (!(this.state.users.has(client.sessionId))) {
+            this.state.users.set(client.sessionId,new Player(client));
+        }
         console.log("Joined lobby room successfully...");
     }
 
     async onLeave(client: Client, consented: boolean) {
+        if (!(this.state.users.has(client.sessionId))) {
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user != undefined) {
+                userState.user.lastPresence = new Date();
+                await saveUserToDb(userState.user);
+            }
+            this.state.users.delete(client.sessionId)
+        }
         console.log("Leaving lobby room successfully...");
     }
 
     async onDispose() {
         console.log("Disposed lobby room successfully...");
+    }
+
+    getGeneratorCost(counter: number) {
+        return Math.floor(10 * Math.pow(1.2,counter));
     }
 
 }

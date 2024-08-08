@@ -8,6 +8,11 @@ export class User extends BaseEntity {
     @Property({type: 'string'}) publicId: string;
     @Property({type: 'string'}) secretId: string;
     @Property({type: 'string'}) mnemonic: string;
+    @Property({type: 'date'}) lastPresence: Date = new Date();
+    @Property({type: 'number'}) currency: number = 0;
+    @Property({type: 'number'}) generators: number = 0;
+    @Property({type: 'number'}) reward: number = 0;
+    @Property({type: 'boolean'}) nft: boolean = false;
 
     constructor(username: string | undefined,
         publicId: string,

@@ -37,7 +37,6 @@
     "@dcl-sdk/utils": "^1.1.3",
     "@mikro-orm/core": "4.5.10",
     "@mikro-orm/mongodb": "4.5.10",
-    "@stellar/stellar-sdk": "^12.1.0",
     "axios": "1.6.2",
     "bcrypt": "^5.1.1",
     "bip39": "^3.1.0",
@@ -47,9 +46,8 @@
     "cors": "2.8.5",
     "express": "4.18.2",
     "node-fetch": "^3.3.2",
+    "open-gamefi-module": "^0.0.1",
     "path": "^0.12.7",
-    "stellar-hd-wallet": "^0.0.10",
-    "stellar-sdk": "^12.1.0",
     "ts-node": "8.10.2",
     "ts-node-dev": "1.1.8",
     "url-polyfill": "1.1.12"

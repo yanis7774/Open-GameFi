@@ -130,3 +130,4 @@ dist
 .pnp.*
 stellar-wallet/package-lock.json
 stellar-back/package-lock.json
+open-gamefi-module/package-lock.json
