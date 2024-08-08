@@ -1,5 +1,5 @@
-# Open-GameFi
-An open source library for creating mini-games on different blockchains
+![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/GameFiBanner.png?raw=true)
+![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/textBanner.png?raw=true)
 
 # Setup
 To setup, you need to do the following:
