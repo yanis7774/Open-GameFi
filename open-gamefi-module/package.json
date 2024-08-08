@@ -1,5 +1,5 @@
 {
-  "name": "open-gamefi-addon",
+  "name": "open-gamefi",
   "version": "0.0.1",
   "description": "Simple library to call contracts and operate blockchain networks. Part of Open-GameFi starter kit\n\n",
   "main": "./dist/index.js",
