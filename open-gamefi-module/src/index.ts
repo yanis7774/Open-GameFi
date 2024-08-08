@@ -1,4 +1,4 @@
-import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, invokeContract, parseResponse, rewardWallet, setConversionRate, setWithdrawLimit, withdrawBalance } from "./stellar"
+import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, invokeContract, parseResponse, rewardWallet, setConversionRate, setWithdrawLimit, withdrawBalance, getNftBalance } from "./stellar"
 
 export {
     createStellarAccount,
@@ -10,5 +10,6 @@ export {
     rewardWallet,
     setConversionRate,
     setWithdrawLimit,
-    withdrawBalance
+    withdrawBalance,
+    getNftBalance
 }

@@ -192,3 +192,13 @@ export async function rewardWallet(secretKey: string) {
     ));
     return Number(res["_value._attributes.lo._value"]);
 }
+
+export async function getNftBalance(secretKey: string, nftContract: string = undefined) {
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const contract = new Contract(nftContract != undefined ? nftContract : process.env.NFT);
+    const res = await invokeContract(secretKey,contract.call(
+        "balance", // Function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())) // Public key
+    ));
+    return Number(res["_value._attributes.lo._value"]) / conversionRate;
+}
