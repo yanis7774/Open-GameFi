@@ -1,7 +1,7 @@
 import { Client, Room } from "colyseus";
 import { MainRoomState, Player } from "./schema/MainRoomState";
 import { getUser, initUser, saveUserToDb } from "../db/dbUtils";
-import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, rewardWallet, withdrawBalance } from "open-gamefi-module";
+import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, rewardWallet, withdrawBalance } from "open-gamefi";
 //import { Server } from "@stellar/stellar-sdk/lib/horizon";
 const bcrypt = require('bcrypt');
 
