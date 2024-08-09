@@ -1,5 +1,5 @@
 # Open-GameFi
-![alt text](https://i.ibb.co/q07bLzZ/Game-Fi-Banner.png)
+![alt text](https://i.ibb.co/ZSWxpCm/Open.png)
 ![alt text](https://i.ibb.co/6yq1TNB/text-Banner.png)
 
 # Game-Fi Setup
