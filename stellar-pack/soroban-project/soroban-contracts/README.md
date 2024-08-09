@@ -8,6 +8,8 @@ guide to learn how to deploy them.
 ## Token contract
 
 Can be used to create a custom token for operations in main contract. Installation is described in main README file.
+This contract can also be used as NFT contract. Mint needed amount of tokens, then lock the issuing account to make
+a limited supply NFT.
 
 ## Main contract
 

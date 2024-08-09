@@ -28,12 +28,15 @@ App has following blocks:
 - Create Wallet: has interface to show current public, secret, mnemonic keys and balance on the main contract.
 create wallet also has a create wallet button, that generates a new stellar account without saving it anywhere
 - Connect Wallet: has 3 buttons for operating main contract: deposit, withdraw and reward. Also shows a QR code version of current public key
+- IdlePart: has 2 interactive buttons for idle game: click increases currency and generator spends currency to give +1 generator. Logic for this
+is given in backend section. Here all the info is shown for the game results.
 - Pay Wallet: shows a QR code of current address, where XLM can be send to for some purpose
 - ListenerInitializer: adds room listener, that is described in Room Provider section
 
 ### User/Wallet
 
-This contexts have a set of variables for storing during a session. Current keys, login, system messages, balance and other data
+This contexts have a set of variables for storing during a session. Current keys, login, system messages, balance and other data.
+User context also stores data for Idle Game (accumulated currency, generators, rewards and if NFT is active right now).
 
 ### Room Provider
 

@@ -77,7 +77,10 @@ export class MainRoom extends Room<MainRoomState> {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime())/1000) * (userState.generators) * (1 + userState.user.reward));
                         userState.user.lastPresence = now;
-                        userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
+                        if (process.env.NFT_ON == "true")
+                            userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
+                        else
+                            userState.user.nft = false;
                         await saveUserToDb(userState.user);
                         client.send("connectWallet",{
                             publicKey: userToLogin.publicId,
