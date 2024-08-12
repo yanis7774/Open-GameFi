@@ -3,10 +3,9 @@ import express from "express";
 import cors from 'cors'
 import {MainRoom} from "./rooms/MainRoom";
 import { WebSocketTransport } from  "@colyseus/ws-transport"
-import { LocalPresence, RedisDriver, RedisPresence } from "colyseus";
+import { LocalPresence } from "colyseus";
 
 import EventEmitter from "events";
-import path from "path";
 
 const appEmitter = new EventEmitter();
 let appReadyPromiseResolve: (arg0: express.Express) => void;
@@ -40,7 +39,7 @@ export default config({
         app.use(express.json());
         app.use(express.urlencoded({extended: true, limit: "10kb"}));
 
-        const allowlist = ['https://play.decentraland.org', 'https://play.decentraland.zone', 'localhost:3000']
+        const allowlist = ['localhost:3000']
         const corsOptionsDelegate = (req: any, callback: any) => {
             try {
                 let corsOptions;
@@ -65,8 +64,6 @@ export default config({
         });
 
         },
-
-
 
     beforeListen: () => {
 

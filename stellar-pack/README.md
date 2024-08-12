@@ -78,6 +78,8 @@ stellar contract invoke \
 ```
 
 Token and main contracts' ids should be transferred in .env of backend part
+When you will move from testnet, change all testnet to desired network in commands.
+(Don't forget to change XLM address in .env if using XLM for main contract, it is testnet address by default).
 
 ### Install and run backend
 

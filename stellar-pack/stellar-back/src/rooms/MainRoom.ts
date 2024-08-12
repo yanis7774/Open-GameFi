@@ -183,7 +183,6 @@ export class MainRoom extends Room<MainRoomState> {
             const player = new Player(client);
             this.state.users.set(client.sessionId,player);
         }
-        new Contract(process.env.NFT);
         console.log("Joined lobby room successfully...");
     }
 
