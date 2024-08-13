@@ -17,7 +17,7 @@ Dive into the folders to find the blockchain network that suits your project nee
 
 Some blockchains are currently in active development and will be available later.
 
-- Stellar: Ready!
+- [Stellar: Ready!](https://github.com/yanis7774/Open-GameFi/tree/main/stellar-pack)
 - Solana: WIP
 - Ethereum: WIP
 - Polygon: WIP
