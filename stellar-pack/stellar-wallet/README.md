@@ -1,50 +1,112 @@
-# Getting Started with React frontend open-gamefi app
+# React Frontend for Open GameFi App
 
-## Base app
+This guide explains the structure and customization of the React frontend for the Open GameFi app.
 
-The app structure is spread among different js files. Core of the project is index.js
-It has the following structure:
+## Project Structure
 
-```js
-  <UserProvider>
-    <WalletProvider>
-      <RoomProvider>
-        <App />
-      </RoomProvider>
-    </WalletProvider>
-  </UserProvider>
+The app's core structure is defined in `index.js`:
+
+```jsx
+<UserProvider>
+  <WalletProvider>
+    <RoomProvider>
+      <App />
+    </RoomProvider>
+  </WalletProvider>
+</UserProvider>
 ```
 
-App class is all the class parts and can be viewed in App.js. It is wrapped in 3 wrappers.
-Wallet and User providers store variables for wallet and user. RoomProvider is used for
-connecting to backend
+The App component (defined in App.js) is wrapped in three context providers:
 
-### App
+- UserProvider: Manages user-related state
+- WalletProvider: Handles wallet information
+- RoomProvider: Manages backend connection
 
-App has following blocks:
+## Main Components
+### App (App.js)
+The App component consists of several key blocks:
 
-- Register: has 2 fields for creating new user (login/password)
-- Authorize: has 2 fileds to log in using login/password
-- Create Wallet: has interface to show current public, secret, mnemonic keys and balance on the main contract.
-create wallet also has a create wallet button, that generates a new stellar account without saving it anywhere
-- Connect Wallet: has 3 buttons for operating main contract: deposit, withdraw and reward. Also shows a QR code version of current public key
-- IdlePart: has 2 interactive buttons for idle game: click increases currency and generator spends currency to give +1 generator. Logic for this
-is given in backend section. Here all the info is shown for the game results.
-- Pay Wallet: shows a QR code of current address, where XLM can be send to for some purpose
-- ListenerInitializer: adds room listener, that is described in Room Provider section
+1. Register: Creates new users (login/password)
+2. Authorize: Logs in existing users (login/password)
+3. Create Wallet:
 
-### User/Wallet
+- Displays current public, secret, and mnemonic keys
+- Shows balance on the main contract
+- Includes a button to generate a new Stellar account (not saved)
 
-This contexts have a set of variables for storing during a session. Current keys, login, system messages, balance and other data.
-User context also stores data for Idle Game (accumulated currency, generators, rewards and if NFT is active right now).
+4. Connect Wallet:
 
-### Room Provider
+- Provides buttons for main contract operations: deposit, withdraw, and reward
+- Displays a QR code of the current public key
 
-roomContext has a connection function to init a connection with backend server. It also stores the connected room in a state
-listenerInitializer inits a listener for reacting to incoming backend messages and calls setting variables in other contexts
+5. IdlePart:
 
-## How to adapt
+- Implements idle game mechanics
+- Displays game results and provides interaction buttons
 
-When adding new functionality for backend, add new listener messages in listenerInitializer. When you need to add some visual interface,
-create a new class in a separate file and add it into App.js. Removing class blocks can be done in App.js too. New variables should
-be added along with a set functions in Wallet and User contexts, which are then imported when needed.
+6. Pay Wallet: Shows a QR code for the current address to receive XLM
+7. ListenerInitializer: Sets up room listeners for backend communication
+
+## Context Providers
+### UserProvider and WalletProvider
+These contexts store session-related information:
+
+- User data (login, game state)
+- Wallet data (keys, balance)
+- System messages
+
+## RoomProvider
+Manages the backend connection:
+
+- Provides a connection function to initialize backend communication
+- Stores the connected room in its state
+
+## ListenerInitializer
+Initializes listeners for backend messages and updates other contexts accordingly.
+## Customization Guide
+### Adding New Functionality
+
+1. Backend Integration:
+
+- Add new listener messages in listenerInitializer
+
+2. UI Components:
+
+- Create a new component in a separate file
+- Import and add the component to App.js
+
+3. State Management:
+
+- Add new variables and setter functions in UserProvider or WalletProvider
+- Import and use these in your components as needed
+
+## Removing Features
+To remove existing features, locate and remove the corresponding component from App.js.
+
+## Best Practices
+
+1. Modularity: Keep each component in a separate file for better organization.
+2. State Management: Use context providers for global state, and local state for component-specific data.
+3. Error Handling: Implement proper error handling in components and API calls.
+4. Responsive Design: Ensure your UI is responsive for various screen sizes.
+5. Code Comments: Add comments to explain complex logic or component purposes.
+
+## Getting Started
+To run the frontend locally:
+
+```bash
+cd path/to/frontend
+npm install
+npm start
+```
+
+The app will be available at http://localhost:3000 by default.
+
+## Troubleshooting
+If you encounter issues:
+
+1. Check the console for error messages
+2. Ensure all dependencies are correctly installed
+3. Verify that the backend server is running and accessible
+
+For further assistance, please refer to the project's main documentation or open an issue on the GitHub repository.

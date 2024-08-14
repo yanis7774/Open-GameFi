@@ -1,9 +1,15 @@
-# Setup
-To setup, you need to do the following:
+# Setup Guide
 
-- Deploy main contract
-- Deploy token contract (if custom token is needed)
-- Launch backend
+This guide will walk you through setting up a full-stack project using Open GameFi.
+
+## Overview
+
+To set up the project, you need to:
+
+1. Deploy the main contract
+2. Deploy the token contract (if using a custom token)
+3. Launch the backend
+4. Set up and run the frontend
 
 ## Prerequisites
 
@@ -16,101 +22,108 @@ Ensure you have the following software installed on your system:
 - [Git](https://git-scm.com/)
 - [MongoDB](https://www.mongodb.com/try/download/community)
 
-Everything must be properly installed and setup for this starter-kit to work.
+**Note**: All prerequisites must be properly installed and configured for this starter kit to work.
 
 ## Getting Started
 
-### Clone the Repository
+### 1. Clone the Repository
 
-Clone the repository
 ```bash
-git clone <https://github.com/yanis7774/Open-GameFi.git>
-cd <Open-GameFi>
+git clone https://github.com/yanis7774/Open-GameFi.git
+cd Open-GameFi
 ```
 
-### Deploying contracts
+### 2. Deploying contracts
 
-There are 2 contracts in this repo, base contract with deposit, withdraw, balance functions and a token contract.
-If not using XLM, deploy the custom token contract, otherwise you may ignore it. There is also an NFT checker function,
-you can make an NFT contract by making another custom token contract, minting some amount of token and then locking
-the issuing account. NFT checker function can be turned off in .env file (described further)
+There are two contracts in this repo:
 
-To deploy the contract, use the following commands in contract folders:
+1. Base contract with deposit, withdraw, and balance functions
+2. Token contract (optional, for custom tokens)
+
+#### Deploy Main Contract
 
 ```bash
+cd contracts/main-contract
 stellar contract build
-
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/<CONTRACT_NAME>.wasm \
-  --source <YOUR STELLAR SECRET KEY> \
+  --wasm target/wasm32-unknown-unknown/release/main-contract.wasm \
+  --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet
 ```
 
-Token contract's name is "soroban-token-contract", main contract is "main-contract". You can get a stellar account (public and secret key)
-on [Stellar Laboratory](https://laboratory.stellar.org/#account-creator?network=public)
+#### Deploy Token Contract (Optional)
+If not using XLM, deploy the custom token contract:
 
-After deploying the token contract, you need to invoke an initialization function to initialize the token:
+```bash
+cd ../soroban-token-contract
+stellar contract build
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/soroban-token-contract.wasm \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet
+```
 
+Initialize the token contract:
 ```bash
 stellar contract invoke \
   --id <CONTRACT_ID> \
-  --source <YOUR STELLAR SECRET KEY> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet \
   -- \
   initialize \
-  --admin <ADMIN PUBLIC STELLAR KEY> \
-  --decimal <DECIMEL AMOUNT, UP TO 18> \
-  --name <TOKEN NAME> \
-  --symbol <TOKEN SYMBOL>
+  --admin <ADMIN_PUBLIC_STELLAR_KEY> \
+  --decimal <DECIMAL_AMOUNT_UP_TO_18> \
+  --name <TOKEN_NAME> \
+  --symbol <TOKEN_SYMBOL>
 ```
 
-Then you can mint some amount to any wallet:
-
+Mint tokens (optional):
 ```bash
 stellar contract invoke \
   --id <CONTRACT_ID> \
-  --source <YOUR STELLAR SECRET KEY> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet \
   -- \
   mint \
-  --to <WALLET TO RECEIVE TOKENS> \
-  --amount <AMOUNT TO MINT>
+  --to <RECIPIENT_WALLET> \
+  --amount <AMOUNT_TO_MINT>
 ```
+Note: You can get a Stellar account (public and secret key) on Stellar Laboratory.
 
-Token and main contracts' ids should be transferred in .env of backend part
-When you will move from testnet, change all testnet to desired network in commands.
-(Don't forget to change XLM address in .env if using XLM for main contract, it is testnet address by default).
-
-### Install and run backend
-
-Run from backend folder:
+### 3. Setup and Run Backend
 
 ```bash
+cd ../../backend
 npm install
 ```
 
-Create an .env file in the backend directory. Add the required environment variables, following the .env.default in the same folder
-It also has an option for NFT checker, you can ignore NFT address and this mechanic as a whole by changing this option.
-Backend can be run with
+Create an .env file in the backend directory based on .env.default. Update with your contract IDs and other required variables.
+Run the backend:
 
 ```bash
 npm run start
 ```
 
-Backend server is used for authorization, generating new Stellar wallets and initiating operations with main contract
-
-### Install and run frontend
-
-To install and run a React App example for interacting with backend server, use from frontend folder:
+### 4. Setup and Run Frontend
 
 ```bash
+cd ../frontend
 npm install
 npm run start
 ```
 
-Frontend example is a simple app, that calls for backend functions
+## Additional Information
+
+- The backend server handles authorization, generates new Stellar wallets, and initiates operations with the main contract.
+- The frontend example is a simple app that interacts with the backend functions.
+- To deploy outside of testnet, replace "testnet" with your desired network in all commands.
+- Check the READMEs inside the backend, frontend, and contract folders for further details.
+- The NFT checker function can be toggled in the .env file. If not using NFTs, you can ignore the NFT address and related mechanics.
+
+## Troubleshooting
+If you encounter any issues during setup, please check that all prerequisites are correctly installed and that you've followed each step carefully. For persistent problems, refer to our FAQ or open an issue in the GitHub repository.
 
 ## Next Steps
+After successfully setting up the project, explore the various features and functionalities provided by Open GameFi. Consider customizing the contracts, backend logic, or frontend UI to suit your specific game requirements.
 
-Check out readmes inside of backend, frontend and contract folders for further details and information
-To deploy outside of testnet, change all testnet in bash commands above for desired network.
+Happy developing!

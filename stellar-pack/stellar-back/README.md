@@ -1,49 +1,105 @@
-# Getting started with Colyseus backend open-gamefi app
+# Colyseus Backend for Open GameFi App
 
-## Base structure
+This guide explains the structure and functionality of the Colyseus backend for the Open GameFi app.
 
-Index inits 2 things: listen and database. Listen uses appconfig to create a colyseus environment.
-App configs use MainRoom class as a base server room, that is described in MainRoom.ts
-Init databse happens through dbUtils.ts file and initializes MongoDb connection.
-MongoDb connection is handled using repos and mikroORM
+## Table of Contents
+1. [Base Structure](#base-structure)
+2. [Main Room Class](#main-room-class)
+3. [Idle Game](#idle-game)
+4. [Database](#database)
+5. [Getting Started](#getting-started)
+6. [Troubleshooting](#troubleshooting)
 
-### Main Room class
+## Base Structure
 
-This class contains main functions to create, store users and then call the main contract using their keys.
-Most of the messages responding contains a system message, that can be shown in logs or on screen.
-Logged in users' info is stored in MainRoomState. It also has an idle game variables
+The backend is initialized in `index.ts` with two main components:
 
-List of messages contains:
+1. **Listen**: Creates a Colyseus environment using `appconfig`.
+   - Utilizes the `MainRoom` class as the base server room (defined in `MainRoom.ts`).
+2. **Database**: Initializes MongoDB connection through `dbUtils.ts`.
+   - MongoDB connection is managed using repositories and MikroORM.
 
-- register: gets login and password, creates a new user, new stellar account starting with a mnemonic phrase,
-activates it using friendly bot and stores it in db. Password is stored using salt hashing
-- login: gets login and password, salt hashes password to check the match and if successful, sends all keys,
-contract balance and mnemonic phrase.
-- createWallet: generates a new stellar account and sends keys, no storing
-- connectWallet: same as createWallet, but does not generate, instead uses mnemonic phrase to restore account
-- payService: updates public wallet for sending XLM
-- deposit, withdraw, reward Wallet: calls these functions for main contract, using incoming keys
-- click, buyGenerator: this is main idle game commands, click gives +1 to currency of player, while
-buyGenerator spends currency and gives +1 generator to player
+## Main Room Class
 
-At the creating of Main Room, an interval is launched. It gives players with generators some currency each
-second. This is a part of the idle game mechanics.
+The `MainRoom` class (`MainRoom.ts`) contains core functions for user management and smart contract interactions.
 
-There is also a separate function that calculates the cost of the next generator (which rises exponentially).
+### Key Features:
+- User creation and storage
+- Smart contract interactions
+- Idle game logic
 
-### Idle Game
+### Message Handlers:
 
-Idle game is very simple. Player can click a button to gain +1 currency. Player can spend 10 (by default)
-currency to get +1 generator. Each generator gives +1 currency a second. There is a block of code at
-onJoin and onLeave that helps storing all this data in db without constantly calling it. It also checks
-away from game time through lastPresence field to give player currency for his away time.
+1. **register**: 
+   - Creates a new user and Stellar account
+   - Activates account using a friendly bot
+   - Stores user data in the database (password is salt-hashed)
 
-There is also 2 systems that connect blockchain smart contracts to gameplay: NFT and rewards. Reward system
-checks how many rewards are bought on the main contract, each reward multiplies clicking and generator
-income. NFT system checks if user has a particular NFT (at least 1) and boosts clicking income by the
-generator amount.
+2. **login**: 
+   - Validates credentials
+   - Returns keys, contract balance, and mnemonic phrase
 
-### Database
+3. **createWallet**: 
+   - Generates a new Stellar account (not stored)
 
-dbUtils.ts is used for all repo operations. It has repoOperation function to optimize operation calls.
-Currently it has init, get and save users for basic operations with User db oject found in entities folder.
+4. **connectWallet**: 
+   - Restores account using mnemonic phrase
+
+5. **payService**: 
+   - Updates public wallet for XLM transactions
+
+6. **deposit, withdraw, rewardWallet**: 
+   - Interacts with the main contract
+
+7. **click, buyGenerator**: 
+   - Implements idle game mechanics
+
+### Additional Features:
+- Interval-based currency generation for players with generators
+- Dynamic generator cost calculation
+
+## Idle Game
+
+A simple idle game implementation with the following features:
+
+- Click to gain currency
+- Buy generators with currency
+- Generators produce currency over time
+- Away-from-game time compensation
+- Blockchain integration:
+  - Reward system: Multiplies income based on rewards bought on the main contract
+  - NFT system: Boosts clicking income if the user owns a specific NFT
+
+## Database
+
+Database operations are handled in `dbUtils.ts`:
+
+- `repoOperation` function optimizes operation calls
+- Current operations: initialize, get, and save users
+- User database object defined in the `entities` folder
+
+## Getting Started
+
+To set up and run the backend:
+
+1. Install dependencies:
+```bash
+npm install
+```
+2. Set up your environment variables in a `.env` file (refer to `.env.example` if provided).
+
+3. Start the server:
+
+```bash
+npm start
+```
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. Check your database connection and credentials
+2. Ensure all required environment variables are set
+3. Verify that all dependencies are correctly installed
+
+For further assistance, please refer to the project's main documentation or open an issue on the GitHub repository.
