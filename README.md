@@ -24,6 +24,63 @@ Explore a variety of project examples, each housed in its own folder, showcasing
 3. Follow the README in each folder to set up and run your example project
 4. Customize and build upon the examples to create your own GameFi project
 
+## Project Features
+
+### 1. Colyseus Backend Setup
+* **Purpose:** Set up a real-time game server
+* **Components:**
+    * Configurations
+    * Game rooms
+    * State management
+* **Benefits:** Easy synchronization of game state between server and clients
+### 2. Database Connection
+* **Technology:** mikro-orm with MongoDB
+* **Features:**
+    * Utilities file for simplified queries
+* **Advantage:** Efficient data storage and retrieval
+### 3. Soroban Smart Contract
+* **Includes:**
+    * Ready-to-use smart contract
+    * Deployment commands
+* **Platform:** Soroban (Stellar's smart contract system)
+### 4. Token Deposit/Withdraw Module
+* **Functionality:** Handle deposits and withdrawals
+* **Supported Tokens:**
+    * XLM (Stellar's native currency)
+    * Custom tokens
+* **Operations:** Balance checks, deposit processing, withdrawal execution
+### 5. Reward Purchasing System
+* **Currency:** Contract currency (XLM or custom token)
+* **Implementation:** Rewards as a counter
+* **Importance:** Crucial for game economy and progression
+### 6. Token/NFT Creation Contract
+* **Type:** Soroban smart contract
+* **Purpose:** Create custom tokens or NFTs
+* **Use Case:** Represent unique in-game assets or achievements
+### 7. Smart Contract Interaction NPM Module
+* **Format:** Reusable Node.js package
+* **Content:** Functions to invoke smart contracts
+* **Benefit:** Simplifies blockchain functionality integration
+### 8. React Frontend Setup
+* **Components:**
+    * User interface design
+    * Backend connection
+    * Message sending to backend
+    * Local state management
+### 9. Backend Connection Configuration
+* **Features:**
+    * Listeners for real-time updates
+    * Connection state management
+* **Importance:** Ensures smooth data flow between client and server
+### 10. Idle Game Example
+* **Scope:** Complete game implementation
+* **Includes:**
+    * Frontend and backend components
+* **Mechanics:**
+    * Passive income from generators
+    * Upgrades through rewards and NFTs
+* **Purpose:** Practical demonstration of feature integration
+
 ## Curreny blockchain readiness
 
 Some blockchains are currently in active development and will be available later.
