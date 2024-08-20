@@ -17,6 +17,11 @@ Welcome to the Open-GameFi repository! This collection is your gateway to buildi
 
 Explore a variety of project examples, each housed in its own folder, showcasing the unique features and capabilities of different blockchain networks. From Ethereum to Solana, and everything in between, we've got you covered with practical examples to kickstart your development process.
 
+## Join our discord!
+
+Connect and collaborate with like-minded developers and innovators. Get support, share your projects and help shape the future of Open-GameFi!
+[Link to Discord Server](https://discord.gg/YGX7QxkbQ7)
+
 ## Get Started
 
 1. Clone this repository
