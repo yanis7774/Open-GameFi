@@ -183,12 +183,13 @@ export async function getBalance(secretKey: string) {
     return Number(res["_value._attributes.lo._value"]) / conversionRate;
 }
 
-export async function rewardWallet(secretKey: string) {
+export async function rewardWallet(secretKey: string, rewardId: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
     const contract = new Contract(process.env.CONTRACT);
     const res = await invokeContract(secretKey,contract.call(
         "activate_reward", // Function name
-        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())) // Public key
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key
+        createI128(rewardId) // Reward Id
     ));
     return Number(res["_value._attributes.lo._value"]);
 }

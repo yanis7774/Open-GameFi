@@ -44,6 +44,22 @@ The main contract handles core game operations.
 
 All functions operate on the address' local balance of particular tokens.
 
+## Rewards
+
+You can add any amount of rewards to the contract, you need to invoke this function from admin wallet:
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ADDRESS> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  set_reward \
+  --id <REWARD_UNIQUE_ID> \
+  --price <REWARD_PURCHASE_COST> \
+  --max_amount <REWARD_LIMIT_AMOUNT>
+```
+
 ## Getting Started
 
 To set up the project locally:

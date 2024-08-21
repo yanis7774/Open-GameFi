@@ -51,6 +51,32 @@ stellar contract deploy \
   --network testnet
 ```
 
+Initialize the contract with admin public key argument
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ADDRESS> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  initialize \
+  --admin <ADMIN_PUBLIC_KEY>
+```
+
+Add at least one reward to the contract (required for example to work, use id 1)
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ADDRESS> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  set_reward \
+  --id 1 \
+  --price <REWARD_PURCHASE_COST> \
+  --max_amount <REWARD_LIMIT_AMOUNT>
+```
+
 #### Deploy Token Contract (Optional)
 If not using XLM, deploy the custom token contract:
 

@@ -119,7 +119,7 @@ export class MainRoom extends Room<MainRoomState> {
 
         this.onMessage("rewardWallet", async (client, msg) => {
             client.send("systemMessage","Rewarding...");
-            const res = await rewardWallet(msg.secret);
+            const res = await rewardWallet(msg.secret, 1);
             const balance = await getBalance(msg.secret);
             let userState = this.state.users.get(client.sessionId);
             userState.user.reward = res;
