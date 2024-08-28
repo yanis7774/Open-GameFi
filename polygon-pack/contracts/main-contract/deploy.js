@@ -1,4 +1,4 @@
-const { ethers, BigNumber } = require("ethers");
+const { ethers } = require("ethers");
 require('dotenv').config();
 
 const contractABI = [
@@ -270,21 +270,28 @@ async function main() {
     
     console.log("CONTRACT: ", contract);
 
+	console.log("CONTRACT ADDRESS: ", contract.target);
+
     console.log("Contract deployment confirmed!");
+
+	const newContract = new ethers.Contract(contract.target, contractABI, wallet);
+
+	console.log("Setting up reward 1...");
+	let tx = await newContract.addIDProperties(1,ethers.parseEther("0.1"),10, {
+		gasLimit: 100000,
+		gasPrice: ethers.parseUnits('50', 'gwei')
+	});
+	await tx.wait();
+    console.log("Reward 1 set!");
+	console.log("Setting up reward 2...");
+	tx = await newContract.addIDProperties(2,ethers.parseEther("0.1"),10, {
+		gasLimit: 100000,
+		gasPrice: ethers.parseUnits('50', 'gwei')
+	});
+	await tx.wait();
+    console.log("Reward 2 set!");
 }
 
-// main().catch(error => {
-//     console.error("Error deploying contract:", error);
-// });
-
-async function interactWithContract() {
-    const provider = new ethers.JsonRpcProvider(process.env.JSON_RPC);
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-
-    const contractAddress = "0x26a8ec2bb4CA62940c627b73c740e79B2947Bbe0";
-
-    const contract = new ethers.Contract(contractAddress, contractABI, wallet);
-	
-}
-
-// interactWithContract().catch(console.error);
+main().catch(error => {
+    console.error("Error deploying contract:", error);
+});

@@ -12,7 +12,6 @@ export const RoomProvider = ({ children }) => {
       try {
         const room = await client.joinOrCreate('lobby_room');
         setConnectedRoom(room);
-        room.send("payService");
         console.log('Connected to room', room);
       } catch (error) {
         console.error('Failed to connect to room', error);

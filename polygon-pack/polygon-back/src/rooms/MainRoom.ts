@@ -1,16 +1,15 @@
 import { Client, Room } from "colyseus";
 import { MainRoomState, Player } from "./schema/MainRoomState";
 import { getUser, initUser, saveUserToDb } from "../db/dbUtils";
-import { createStellarAccount, depositBalance, getBalance, getNftBalance, getStellarAccountFromMnemonic, rewardWallet, withdrawBalance } from "open-gamefi";
-import { Contract } from "stellar-sdk";
-//import { Server } from "@stellar/stellar-sdk/lib/horizon";
+import { createPolygonAccount, polygonBalance, polygonDeposit, polygonReward, polygonWithdraw, setupPolygonOptions } from "open-gamefi";
+import { contractABI } from "../globals";
 const bcrypt = require('bcrypt');
 
 const saltRounds = 10;
-const payToPublicKey = "GA7K4RFFZ2EJXLCYVGQJU7PUKTEHKGQW6UAQXWEE6BDWN26HEJAQYDSF";
 
 export class MainRoom extends Room<MainRoomState> {
     onCreate(options: any) {
+        setupPolygonOptions(process.env.JSON_RPC, contractABI, process.env.CONTRACT_ADDRESS, 100000, 50);
         this.setState(new MainRoomState());
         this.setUp(this);
         this.setSeatReservationTime(60);
@@ -33,7 +32,7 @@ export class MainRoom extends Room<MainRoomState> {
 
         this.onMessage("createWallet", async (client, msg) => {
             // This creates a mnemonic phrase first
-            const newAccount = await createStellarAccount();
+            const newAccount = await createPolygonAccount();
 
             client.send("createWallet", { 
                 publicKey: newAccount.publicKey,
@@ -42,26 +41,6 @@ export class MainRoom extends Room<MainRoomState> {
             })
             client.send("systemMessage","Wallet created!");
         })
-
-        this.onMessage("connectWallet", async (client, msg) => {
-            // This connectes wallet from mnemonic phrase, not used for now
-            const existingAccount = await getStellarAccountFromMnemonic(msg.mnemonic)
-            client.send("connectWallet",{
-                publicKey: existingAccount.publicKey,
-                secretKey: existingAccount.secretKey,
-                mnemonic: existingAccount.mnemonic,
-                balance: await getBalance(existingAccount.secretKey)
-            });
-            client.send("systemMessage","Wallet connected!");
-        });
-
-        this.onMessage("payService", async (client, msg) => {
-            // Sends a public key as payment receiver
-            client.send("payService", {
-                publicKey: payToPublicKey,
-                price: 100,
-            });
-        });
 
         this.onMessage("login", async (client, msg) => {
             let userState = this.state.users.get(client.sessionId);
@@ -77,16 +56,12 @@ export class MainRoom extends Room<MainRoomState> {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime())/1000) * (userState.generators) * (1 + userState.user.reward));
                         userState.user.lastPresence = now;
-                        if (process.env.NFT_ON == "true")
-                            userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
-                        else
-                            userState.user.nft = false;
                         await saveUserToDb(userState.user);
                         client.send("connectWallet",{
                             publicKey: userToLogin.publicId,
                             secretKey: userToLogin.secretId,
                             mnemonic: userToLogin.mnemonic,
-                            balance: await getBalance(userToLogin.secretId)
+                            balance: await polygonBalance(userToLogin.secretId)
                         });
                         client.send("updateClicker",{
                             currency: userState.currency,
@@ -107,20 +82,20 @@ export class MainRoom extends Room<MainRoomState> {
 
         this.onMessage("withdrawWallet", async (client, msg) => {
             client.send("systemMessage","Withdrawing...");
-            const res = await withdrawBalance(msg.secret, Number(msg.amount));
+            const res = await polygonWithdraw(msg.secret, Number(msg.amount));
             client.send("balanceUpdate",{balance: res, systemMessage: "Withdraw success!"});
         });
 
         this.onMessage("depositWallet", async (client, msg) => {
             client.send("systemMessage","Depositing...");
-            const res = await depositBalance(msg.secret, Number(msg.amount));
+            const res = await polygonDeposit(msg.secret, Number(msg.amount));
             client.send("balanceUpdate",{balance: res, systemMessage: "Deposit success!"});
         });
 
         this.onMessage("rewardWallet", async (client, msg) => {
             client.send("systemMessage","Rewarding...");
-            const res = await rewardWallet(msg.secret, 1);
-            const balance = await getBalance(msg.secret);
+            const res = await polygonReward(msg.secret, 1);
+            const balance = await polygonBalance(msg.secret);
             let userState = this.state.users.get(client.sessionId);
             userState.user.reward = res;
             await saveUserToDb(userState.user);
@@ -132,7 +107,7 @@ export class MainRoom extends Room<MainRoomState> {
             if (userExists) {
                 client.send("systemMessage","Username already exists");
             } else {
-                const newAccount = await createStellarAccount();
+                const newAccount = await createPolygonAccount();
                 await initUser(msg.login,await bcrypt.hash(msg.password, saltRounds),newAccount.publicKey,newAccount.secretKey,newAccount.mnemonic);
                 client.send("systemMessage","User created, login to see your public wallet");
             }

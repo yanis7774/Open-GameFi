@@ -14,13 +14,12 @@ const colyseus_1 = require("colyseus");
 const MainRoomState_1 = require("./schema/MainRoomState");
 const dbUtils_1 = require("../db/dbUtils");
 const open_gamefi_1 = require("open-gamefi");
-const stellar_sdk_1 = require("stellar-sdk");
-//import { Server } from "@stellar/stellar-sdk/lib/horizon";
+const globals_1 = require("../globals");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-const payToPublicKey = "GA7K4RFFZ2EJXLCYVGQJU7PUKTEHKGQW6UAQXWEE6BDWN26HEJAQYDSF";
 class MainRoom extends colyseus_1.Room {
     onCreate(options) {
+        (0, open_gamefi_1.setupPolygonOptions)(process.env.JSON_RPC, globals_1.contractABI, process.env.CONTRACT_ADDRESS, 100000, 50);
         this.setState(new MainRoomState_1.MainRoomState());
         this.setUp(this);
         this.setSeatReservationTime(60);
@@ -41,31 +40,13 @@ class MainRoom extends colyseus_1.Room {
         }, 1000);
         this.onMessage("createWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             // This creates a mnemonic phrase first
-            const newAccount = yield (0, open_gamefi_1.createStellarAccount)();
+            const newAccount = yield (0, open_gamefi_1.createPolygonAccount)();
             client.send("createWallet", {
                 publicKey: newAccount.publicKey,
                 secret: newAccount.secretKey,
                 mnemonic: newAccount.mnemonic
             });
             client.send("systemMessage", "Wallet created!");
-        }));
-        this.onMessage("connectWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
-            // This connectes wallet from mnemonic phrase, not used for now
-            const existingAccount = yield (0, open_gamefi_1.getStellarAccountFromMnemonic)(msg.mnemonic);
-            client.send("connectWallet", {
-                publicKey: existingAccount.publicKey,
-                secretKey: existingAccount.secretKey,
-                mnemonic: existingAccount.mnemonic,
-                balance: yield (0, open_gamefi_1.getBalance)(existingAccount.secretKey)
-            });
-            client.send("systemMessage", "Wallet connected!");
-        }));
-        this.onMessage("payService", (client, msg) => __awaiter(this, void 0, void 0, function* () {
-            // Sends a public key as payment receiver
-            client.send("payService", {
-                publicKey: payToPublicKey,
-                price: 100,
-            });
         }));
         this.onMessage("login", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             let userState = this.state.users.get(client.sessionId);
@@ -81,13 +62,12 @@ class MainRoom extends colyseus_1.Room {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators) * (1 + userState.user.reward));
                         userState.user.lastPresence = now;
-                        userState.user.nft = (yield (0, open_gamefi_1.getNftBalance)(userToLogin.secretId, process.env.NFT)) > 0;
                         yield (0, dbUtils_1.saveUserToDb)(userState.user);
                         client.send("connectWallet", {
                             publicKey: userToLogin.publicId,
                             secretKey: userToLogin.secretId,
                             mnemonic: userToLogin.mnemonic,
-                            balance: yield (0, open_gamefi_1.getBalance)(userToLogin.secretId)
+                            balance: yield (0, open_gamefi_1.polygonBalance)(userToLogin.secretId)
                         });
                         client.send("updateClicker", {
                             currency: userState.currency,
@@ -109,18 +89,18 @@ class MainRoom extends colyseus_1.Room {
         }));
         this.onMessage("withdrawWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             client.send("systemMessage", "Withdrawing...");
-            const res = yield (0, open_gamefi_1.withdrawBalance)(msg.secret, Number(msg.amount));
+            const res = yield (0, open_gamefi_1.polygonWithdraw)(msg.secret, Number(msg.amount));
             client.send("balanceUpdate", { balance: res, systemMessage: "Withdraw success!" });
         }));
         this.onMessage("depositWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             client.send("systemMessage", "Depositing...");
-            const res = yield (0, open_gamefi_1.depositBalance)(msg.secret, Number(msg.amount));
+            const res = yield (0, open_gamefi_1.polygonDeposit)(msg.secret, Number(msg.amount));
             client.send("balanceUpdate", { balance: res, systemMessage: "Deposit success!" });
         }));
         this.onMessage("rewardWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             client.send("systemMessage", "Rewarding...");
-            const res = yield (0, open_gamefi_1.rewardWallet)(msg.secret);
-            const balance = yield (0, open_gamefi_1.getBalance)(msg.secret);
+            const res = yield (0, open_gamefi_1.polygonReward)(msg.secret, 1);
+            const balance = yield (0, open_gamefi_1.polygonBalance)(msg.secret);
             let userState = this.state.users.get(client.sessionId);
             userState.user.reward = res;
             yield (0, dbUtils_1.saveUserToDb)(userState.user);
@@ -132,7 +112,7 @@ class MainRoom extends colyseus_1.Room {
                 client.send("systemMessage", "Username already exists");
             }
             else {
-                const newAccount = yield (0, open_gamefi_1.createStellarAccount)();
+                const newAccount = yield (0, open_gamefi_1.createPolygonAccount)();
                 yield (0, dbUtils_1.initUser)(msg.login, yield bcrypt.hash(msg.password, saltRounds), newAccount.publicKey, newAccount.secretKey, newAccount.mnemonic);
                 client.send("systemMessage", "User created, login to see your public wallet");
             }
@@ -183,7 +163,6 @@ class MainRoom extends colyseus_1.Room {
                 const player = new MainRoomState_1.Player(client);
                 this.state.users.set(client.sessionId, player);
             }
-            new stellar_sdk_1.Contract(process.env.NFT);
             console.log("Joined lobby room successfully...");
         });
     }

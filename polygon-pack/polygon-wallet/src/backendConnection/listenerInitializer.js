@@ -4,7 +4,7 @@ import { useRoom } from './roomContext';
 import { useUser } from '../UserContext';
 
 const ListenerInitializer = () => {
-    const { setPublicKey, setSecretKey, setPayPublicKey, setServicePrice, setMnemonicPhrase, setBalance } = useWallet();
+    const { setPublicKey, setSecretKey, setMnemonicPhrase, setBalance } = useWallet();
     const { connectedRoom } = useRoom();
     const { setUserMessage, setUserCurrency, setUserGenerators, setUserRewards, setUserGeneratorPrice, setUserNftActive } = useUser();
 
@@ -25,10 +25,6 @@ const ListenerInitializer = () => {
         setBalance(message.balance);
         setUserMessage(message.systemMessage);
       })
-      connectedRoom.onMessage('payService', (message) => {
-        setPayPublicKey(message.publicKey);
-        setServicePrice(message.price);
-      });
       connectedRoom.onMessage('systemMessage', (message) => {
         setUserMessage(message);
       });

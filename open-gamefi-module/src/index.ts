@@ -1,4 +1,5 @@
 import { createStellarAccount, depositBalance, getBalance, getStellarAccountFromMnemonic, invokeContract, parseResponse, rewardWallet, setConversionRate, setWithdrawLimit, withdrawBalance, getNftBalance } from "./stellar"
+import { createPolygonAccount, setupPolygonOptions, loadPolygonAccount, polygonDeposit, polygonWithdraw, polygonBalance, polygonReward, polygonRewardBalance } from "./polygon"
 
 export {
     createStellarAccount,
@@ -11,5 +12,13 @@ export {
     setConversionRate,
     setWithdrawLimit,
     withdrawBalance,
-    getNftBalance
+    getNftBalance,
+    createPolygonAccount,
+    setupPolygonOptions,
+    loadPolygonAccount,
+    polygonRewardBalance,
+    polygonReward,
+    polygonBalance,
+    polygonDeposit,
+    polygonWithdraw,
 }

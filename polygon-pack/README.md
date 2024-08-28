@@ -16,9 +16,6 @@ To set up the project, you need to:
 Ensure you have the following software installed on your system:
 
 - [Node.js](https://nodejs.org/en/download/) (v14.x or later)
-- [Rust](https://www.rust-lang.org/tools/install)
-- [Soroban CLI](https://soroban.stellar.org/docs/getting-started/installation)
-- [Stellar CLI](https://developers.stellar.org/docs/stellar-core/software/stellar-core/)
 - [Git](https://git-scm.com/)
 - [MongoDB](https://www.mongodb.com/try/download/community)
 
@@ -33,88 +30,29 @@ git clone https://github.com/yanis7774/Open-GameFi.git
 cd Open-GameFi
 ```
 
-### 2. Deploying contracts
+### 2. Deploying contract
 
-There are two contracts in this repo:
-
-1. Base contract with deposit, withdraw, and balance functions
-2. Token contract (optional, for custom tokens)
+There is a contract in this repo, first we need to deploy it.
 
 #### Deploy Main Contract
 
+Fill in the .env file with your polygon private key, public address and rpc url.
 ```bash
 cd contracts/main-contract
-stellar contract build
-stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/main-contract.wasm \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet
+npm install
+node deploy.js
 ```
 
-Initialize the contract with admin public key argument
+The contract will be deployed on polygon mainnet by default, you can check it on polygonscan, the console will output the contract address.
+Admin for contract is the public key of the address that was specified in the .env file.
+After setting up admin, it will add two rewards to the contract automatically.
 
-```bash
-stellar contract invoke \
-  --id <CONTRACT_ADDRESS> \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet \
-  -- \
-  initialize \
-  --admin <ADMIN_PUBLIC_KEY>
-```
+#### Modify contract
 
-Add at least one reward to the contract (required for example to work, use id 1)
-
-```bash
-stellar contract invoke \
-  --id <CONTRACT_ADDRESS> \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet \
-  -- \
-  set_reward \
-  --id 1 \
-  --price <REWARD_PURCHASE_COST> \
-  --max_amount <REWARD_LIMIT_AMOUNT>
-```
-
-#### Deploy Token Contract (Optional)
-If not using XLM, deploy the custom token contract:
-
-```bash
-cd ../soroban-token-contract
-stellar contract build
-stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/soroban-token-contract.wasm \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet
-```
-
-Initialize the token contract:
-```bash
-stellar contract invoke \
-  --id <CONTRACT_ID> \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet \
-  -- \
-  initialize \
-  --admin <ADMIN_PUBLIC_STELLAR_KEY> \
-  --decimal <DECIMAL_AMOUNT_UP_TO_18> \
-  --name <TOKEN_NAME> \
-  --symbol <TOKEN_SYMBOL>
-```
-
-Mint tokens (optional):
-```bash
-stellar contract invoke \
-  --id <CONTRACT_ID> \
-  --source <YOUR_STELLAR_SECRET_KEY> \
-  --network testnet \
-  -- \
-  mint \
-  --to <RECIPIENT_WALLET> \
-  --amount <AMOUNT_TO_MINT>
-```
-Note: You can get a Stellar account (public and secret key) on Stellar Laboratory.
+If you want to modify the contract, you can do so by editing the contract.sol file.
+If you do that, you need to upload the .sol file to https://remix.ethereum.org/ and compile it. (you can view compilation info in the left-side tab)
+After that you will be able to get the new bytecode which you will need to put in the .env file.
+You will also need to change the deploy.js file to use the new API. Then deploy the contract.
 
 ### 3. Setup and Run Backend
 
