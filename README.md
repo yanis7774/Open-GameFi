@@ -93,9 +93,9 @@ Some blockchains are currently in active development and will be available later
 | Blockchain | Status |
 |------------|--------|
 |[Stellar](https://github.com/yanis7774/Open-GameFi/tree/main/stellar-pack) | ✅ Ready! |
+|[Polygon](https://github.com/yanis7774/Open-GameFi/tree/main/polygon-pack) | ✅ Ready! |
 | Solana | 🚧 WIP |
 | Ethereum | 🚧 WIP |
-| Polygon | 🚧 WIP |
 | BNB | 🚧 WIP |
 
 ## NPM module
