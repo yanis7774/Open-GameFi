@@ -1,4 +1,4 @@
-![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/GameFiBanner.png?raw=true)
+![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/Game-FiBanner.png?raw=true)
 
 # Open GameFi
 
