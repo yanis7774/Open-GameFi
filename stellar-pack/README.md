@@ -22,7 +22,26 @@ Ensure you have the following software installed on your system:
 - [Git](https://git-scm.com/)
 - [MongoDB](https://www.mongodb.com/try/download/community)
 
-**Note**: All prerequisites must be properly installed and configured for this starter kit to work.
+**Note**: All prerequisites must be properly installed and configured for this starter kit to work
+
+### Rust, Stellar, Node
+
+Installing Rust for linux/macOS:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+Installing Rust for windows: [setup link](https://medium.com/r/?url=https%3A%2F%2Fstatic.rust-lang.org%2Frustup%2Fdist%2Fi686-pc-windows-gnu%2Frustup-init.exe).
+
+Install Stellar:
+```bash
+cargo install --locked stellar-cli --features opt
+```
+If you use linux/macOS and have brew:
+```bash
+brew install stellar-cli
+```
+
+You can install [Node from here](https://nodejs.org/en/download/package-manager).
 
 ## Getting Started
 
@@ -43,10 +62,10 @@ There are two contracts in this repo:
 #### Deploy Main Contract
 
 ```bash
-cd contracts/main-contract
+cd soroban-project/soroban-contracts
 stellar contract build
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/main-contract.wasm \
+  --wasm target/wasm32-unknown-unknown/release/main_contract.wasm \
   --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet
 ```
@@ -60,7 +79,8 @@ stellar contract invoke \
   --network testnet \
   -- \
   initialize \
-  --admin <ADMIN_PUBLIC_KEY>
+  --admin <ADMIN_PUBLIC_KEY> \
+  --token <TOKEN_CONTRACT_ADDRESS>
 ```
 
 Add at least one reward to the contract (required for example to work, use id 1)

@@ -7,7 +7,6 @@ use soroban_sdk::{
 #[derive(Clone)]
 #[contracttype]
 pub struct BalanceInfo {
-    pub token: Address,
     pub amount: i128,
     pub base_withdrawal_limit: i128
 }
@@ -18,13 +17,6 @@ pub struct RewardType {
     pub id: i128,
     pub price: i128,
     pub max_amount: i128
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub struct RewardInfo {
-    pub reward: i128,
-    pub amount: i128
 }
 
 #[contracttype]
@@ -59,6 +51,7 @@ pub enum AccError {
     OutOfBounds = 8,
     NotAdmin = 9,
     RewardLimit = 10,
+    WrongToken = 11,
 }
 
 #[contract]
@@ -68,7 +61,7 @@ pub struct CustomAccountContract;
 impl CustomAccountContract {
 
     // Initialize function to set up the main map and admin address
-    pub fn initialize(env: Env, admin: Address) {
+    pub fn initialize(env: Env, admin: Address, token: Address) {
         // Check if the admin is already set
         if env.storage().instance().has(&"admin") {
             panic!("Admin has already been initialized.");
@@ -77,16 +70,31 @@ impl CustomAccountContract {
         // Set the admin address
         env.storage().instance().set(&"admin", &admin);
 
+        // Set free funds
+        env.storage().instance().set(&"locked_funds", &0i128);
+
+        // Set free funds
+        env.storage().instance().set(&"token", &token);
+
         // Initialize the main map
         let main_map: Map<Address, Map<u32, i32>> = Map::new(&env);
         env.storage().instance().set(&"main_map", &main_map);
+    }
+
+    pub fn check_locked_funds(env: Env) -> Result<i128, AccError> {
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Locked funds are not initialized.");
+        Ok(locked_funds)
+    }
+
+    pub fn check_token(env: Env) -> Result<Address, AccError> {
+        let token_check: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        Ok(token_check)
     }
 
     // Set new reward type
     pub fn set_reward(env: Env, id: i128, price: i128, max_amount: i128) -> Result<i128, AccError> {
         let admin: Address = env.storage().instance().get(&"admin").expect("Admin is not initialized.");
         admin.require_auth();
-        //if admin == env.invoker() {
         let new_reward: RewardType = RewardType{
             id: id,
             price: price,
@@ -94,25 +102,56 @@ impl CustomAccountContract {
         };
         env.storage().instance().set(&RewardList::Rewards(id.clone()), &new_reward);
         Ok(1)
-        //} else {
-        //  return Err(AccError::NotAdmin)
-        //}
+    }
+
+    pub fn get_contract_balance(env: Env) -> Result<i128, AccError> {
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        let contract_balance: i128 = TokenClient::new(&env, &token).balance(&env.current_contract_address());
+        Ok(contract_balance)
+    }
+
+    // Withdraw free funds
+    pub fn withdraw_free(env: Env, to: Address, amount: i128) -> Result<i128, AccError> {
+        let admin: Address = env.storage().instance().get(&"admin").expect("Admin is not initialized.");
+        admin.require_auth();
+
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Free funds are not initialized.");
+
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        let contract_balance: i128 = TokenClient::new(&env, &token).balance(&env.current_contract_address());
+
+        if amount > (contract_balance - locked_funds) {
+            return Err(AccError::InsufficientFunds)
+        }
+
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        TokenClient::new(&env, &token).transfer(&env.current_contract_address(), &to, &amount);
+        
+        Ok(1)
+    }
+
+    pub fn donate(env: Env, from: Address, amount: i128) -> Result<i128, AccError> {
+        from.require_auth();
+
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        TokenClient::new(&env, &token).transfer(&from, &env.current_contract_address(), &amount);
+        Ok(1)
     }
 
     pub fn deposit(env: Env, from: Address, token: Address, amount: i128, base_withdrawal_limit: i128) -> Result<BalanceInfo, AccError> {
         from.require_auth();
 
+        let token_check: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        if token != token_check {
+            return Err(AccError::WrongToken)
+        }
+
         // Transfer token from `from` to this contract.
         TokenClient::new(&env, &token).transfer(&from, &env.current_contract_address(), &amount);
-
-        // Create a unique identifier for this balance entry.
-        //let balance_id = CustomAccountContract::get_counter(&env);
-        //CustomAccountContract::set_counter(&env, balance_id+1);
 
         // Retrieve or initialize balance information.
         let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(from.clone()))
             .unwrap_or(BalanceInfo{
-                token: token.clone(),
                 amount: 0,
                 base_withdrawal_limit: 1000000000,
             });
@@ -124,6 +163,10 @@ impl CustomAccountContract {
 
         // Store the updated balance.
         env.storage().instance().set(&DataKey::Balance(from.clone()), &balance);
+
+        // Increase locked funds
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Locked funds are not initialized.");
+        env.storage().instance().set(&"locked_funds", &(locked_funds + amount));
 
         //Ok(balance_id)
         Ok(balance)
@@ -147,7 +190,12 @@ impl CustomAccountContract {
         env.storage().instance().set(&DataKey::Balance(to.clone()), &balance);
 
         // Transfer the token to the `to` address.
-        TokenClient::new(&env, &balance.token).transfer(&env.current_contract_address(), &to, &amount);
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        TokenClient::new(&env, &token).transfer(&env.current_contract_address(), &to, &amount);
+
+        // Decrease locked funds
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Locked funds are not initialized.");
+        env.storage().instance().set(&"locked_funds", &(locked_funds - amount));
 
         Ok(balance)
     }
@@ -171,6 +219,10 @@ impl CustomAccountContract {
         // Update the balance.
         balance.amount -= 10000000*reward_info.price;
         env.storage().instance().set(&DataKey::Balance(reward_address.clone()), &balance);
+
+        // Decrease locked funds
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Locked funds are not initialized.");
+        env.storage().instance().set(&"locked_funds", &(locked_funds - 10000000*reward_info.price));
 
         // Retrieve or lazily initialize the main_map
         let mut main_map: Map<Address, Map<i128, i128>> = env.storage().instance().get(&"main_map").unwrap_or_else(|| {
@@ -212,5 +264,14 @@ impl CustomAccountContract {
             // Return 0 if no key is present
             Ok(0)
         }
+    }
+
+    pub fn get_free_balance(env: Env) -> Result<i128, AccError> {
+        let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Free funds are not initialized.");
+
+        let token: Address = env.storage().instance().get(&"token").expect("Token is not initialized.");
+        let contract_balance: i128 = TokenClient::new(&env, &token).balance(&env.current_contract_address());
+
+        Ok(contract_balance - locked_funds)
     }
 }

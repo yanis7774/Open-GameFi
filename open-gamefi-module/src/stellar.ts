@@ -173,12 +173,32 @@ export async function withdrawBalance(secretKey: string, amount: number) {
     return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
 }
 
+export async function withdrawFreeFunds(secretKey: string, amount: number) {
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const contract = new Contract(process.env.CONTRACT);
+    const res = await invokeContract(secretKey,contract.call(
+        "withdraw_free", // function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public address
+        createI128(conversionRate*amount) // Withdraw amount
+    ));
+    return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
+}
+
 export async function getBalance(secretKey: string) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
     const contract = new Contract(process.env.CONTRACT);
     const res = await invokeContract(secretKey,contract.call(
         "get_balance", // Function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())) // Public key
+    ));
+    return Number(res["_value._attributes.lo._value"]) / conversionRate;
+}
+
+export async function getFreeBalance(secretKey: string) {
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const contract = new Contract(process.env.CONTRACT);
+    const res = await invokeContract(secretKey,contract.call(
+        "get_free_balance" // Function name
     ));
     return Number(res["_value._attributes.lo._value"]) / conversionRate;
 }

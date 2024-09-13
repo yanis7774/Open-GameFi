@@ -34,7 +34,7 @@ exports.default = (0, tools_1.default)({
     initializeExpress: (app) => {
         app.use(express_1.default.json());
         app.use(express_1.default.urlencoded({ extended: true, limit: "10kb" }));
-        const allowlist = ['https://play.decentraland.org', 'https://play.decentraland.zone', 'localhost:3000'];
+        const allowlist = ['localhost:3000'];
         const corsOptionsDelegate = (req, callback) => {
             try {
                 let corsOptions;

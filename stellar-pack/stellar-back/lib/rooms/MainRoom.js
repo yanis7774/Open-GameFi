@@ -14,7 +14,6 @@ const colyseus_1 = require("colyseus");
 const MainRoomState_1 = require("./schema/MainRoomState");
 const dbUtils_1 = require("../db/dbUtils");
 const open_gamefi_1 = require("open-gamefi");
-const stellar_sdk_1 = require("stellar-sdk");
 //import { Server } from "@stellar/stellar-sdk/lib/horizon";
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -81,7 +80,10 @@ class MainRoom extends colyseus_1.Room {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators) * (1 + userState.user.reward));
                         userState.user.lastPresence = now;
-                        userState.user.nft = (yield (0, open_gamefi_1.getNftBalance)(userToLogin.secretId, process.env.NFT)) > 0;
+                        if (process.env.NFT_ON == "true")
+                            userState.user.nft = (yield (0, open_gamefi_1.getNftBalance)(userToLogin.secretId, process.env.NFT)) > 0;
+                        else
+                            userState.user.nft = false;
                         yield (0, dbUtils_1.saveUserToDb)(userState.user);
                         client.send("connectWallet", {
                             publicKey: userToLogin.publicId,
@@ -119,7 +121,7 @@ class MainRoom extends colyseus_1.Room {
         }));
         this.onMessage("rewardWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             client.send("systemMessage", "Rewarding...");
-            const res = yield (0, open_gamefi_1.rewardWallet)(msg.secret);
+            const res = yield (0, open_gamefi_1.rewardWallet)(msg.secret, 1);
             const balance = yield (0, open_gamefi_1.getBalance)(msg.secret);
             let userState = this.state.users.get(client.sessionId);
             userState.user.reward = res;
@@ -183,7 +185,6 @@ class MainRoom extends colyseus_1.Room {
                 const player = new MainRoomState_1.Player(client);
                 this.state.users.set(client.sessionId, player);
             }
-            new stellar_sdk_1.Contract(process.env.NFT);
             console.log("Joined lobby room successfully...");
         });
     }
