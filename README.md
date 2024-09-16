@@ -1,5 +1,5 @@
 ![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/Game-FiBanner.png?raw=true)
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/qmedzvl2MOA/0.jpg)](https://www.youtube.com/watch?v=qmedzvl2MOA)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/qmedzvl2MOA?si=kHEzBbLb7R7-wF73" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 # Open GameFi
 
