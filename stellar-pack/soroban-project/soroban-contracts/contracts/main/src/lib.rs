@@ -13,7 +13,7 @@ pub struct BalanceInfo {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct RewardType {
+pub struct UpgradeType {
     pub id: i128,
     pub price: i128,
     pub max_amount: i128
@@ -27,14 +27,14 @@ pub enum DataKey {
 
 #[contracttype]
 #[derive(Clone)]
-pub enum Rewards {
+pub enum Upgrades {
     Redeemed(Address)
 }
 
 #[contracttype]
 #[derive(Clone)]
-pub enum RewardList {
-    Rewards(i128)
+pub enum UpgradeList {
+    Upgrades(i128)
 }
 
 #[contracterror]
@@ -50,7 +50,7 @@ pub enum AccError {
     SerializationError = 7,
     OutOfBounds = 8,
     NotAdmin = 9,
-    RewardLimit = 10,
+    UpgradeLimit = 10,
     WrongToken = 11,
 }
 
@@ -91,16 +91,16 @@ impl CustomAccountContract {
         Ok(token_check)
     }
 
-    // Set new reward type
-    pub fn set_reward(env: Env, id: i128, price: i128, max_amount: i128) -> Result<i128, AccError> {
+    // Set new upgrade type
+    pub fn set_upgrade(env: Env, id: i128, price: i128, max_amount: i128) -> Result<i128, AccError> {
         let admin: Address = env.storage().instance().get(&"admin").expect("Admin is not initialized.");
         admin.require_auth();
-        let new_reward: RewardType = RewardType{
+        let new_upgrade: UpgradeType = UpgradeType{
             id: id,
             price: price,
             max_amount: max_amount
         };
-        env.storage().instance().set(&RewardList::Rewards(id.clone()), &new_reward);
+        env.storage().instance().set(&UpgradeList::Upgrades(id.clone()), &new_upgrade);
         Ok(1)
     }
 
@@ -156,7 +156,6 @@ impl CustomAccountContract {
                 base_withdrawal_limit: 1000000000,
             });
 
-
         // Update the balance.
         balance.amount += amount;
         balance.base_withdrawal_limit = base_withdrawal_limit;
@@ -200,29 +199,45 @@ impl CustomAccountContract {
         Ok(balance)
     }
 
-    pub fn activate_reward(env: Env, reward_address: Address, reward_id: i128) -> Result<i128, AccError>{
-        reward_address.require_auth();
+    pub fn check_upgrade(env: Env, upgrade_address: Address, upgrade_id: i128) -> Result<i128, AccError>{
+        let main_map: Map<Address, Map<i128, i128>> = env.storage().instance().get(&"main_map").unwrap_or_else(|| {
+            let map = Map::new(&env);
+            env.storage().instance().set(&"main_map", &map);
+            map
+        });
+        
+        // Access or initialize the nested map
+        let nested_map = main_map.get(upgrade_address.clone()).unwrap_or(Map::new(&env));
+        
+        // Get the current counter value, defaulting to 0 if it doesn't exist
+        let counter = nested_map.get(upgrade_id.clone()).unwrap_or(0);
+
+        Ok(counter)
+    }
+
+    pub fn activate_upgrade(env: Env, upgrade_address: Address, upgrade_id: i128) -> Result<i128, AccError>{
+        upgrade_address.require_auth();
 
         // Retrieve balance information.
-        let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(reward_address.clone()))
+        let mut balance: BalanceInfo = env.storage().instance().get(&DataKey::Balance(upgrade_address.clone()))
             .ok_or(AccError::InsufficientFunds)?;
 
-        // Retrive reward information
-        let reward_info: RewardType = env.storage().instance().get(&RewardList::Rewards(reward_id.clone()))
+        // Retrive upgrade information
+        let upgrade_info: UpgradeType = env.storage().instance().get(&UpgradeList::Upgrades(upgrade_id.clone()))
             .ok_or(AccError::OutOfBounds)?;
 
         // Check if the balance is sufficient.
-        if balance.amount < 10000000*reward_info.price {
+        if balance.amount < 10000000*upgrade_info.price {
             return Err(AccError::InsufficientFunds);
         }
 
         // Update the balance.
-        balance.amount -= 10000000*reward_info.price;
-        env.storage().instance().set(&DataKey::Balance(reward_address.clone()), &balance);
+        balance.amount -= 10000000*upgrade_info.price;
+        env.storage().instance().set(&DataKey::Balance(upgrade_address.clone()), &balance);
 
         // Decrease locked funds
         let locked_funds: i128 = env.storage().instance().get(&"locked_funds").expect("Locked funds are not initialized.");
-        env.storage().instance().set(&"locked_funds", &(locked_funds - 10000000*reward_info.price));
+        env.storage().instance().set(&"locked_funds", &(locked_funds - 10000000*upgrade_info.price));
 
         // Retrieve or lazily initialize the main_map
         let mut main_map: Map<Address, Map<i128, i128>> = env.storage().instance().get(&"main_map").unwrap_or_else(|| {
@@ -232,22 +247,22 @@ impl CustomAccountContract {
         });
         
         // Access or initialize the nested map
-        let mut nested_map = main_map.get(reward_address.clone()).unwrap_or(Map::new(&env));
+        let mut nested_map = main_map.get(upgrade_address.clone()).unwrap_or(Map::new(&env));
         
         // Get the current counter value, defaulting to 0 if it doesn't exist
-        let counter = nested_map.get(reward_id.clone()).unwrap_or(0);
+        let counter = nested_map.get(upgrade_id.clone()).unwrap_or(0);
 
-        if counter + 1 > reward_info.max_amount {
+        if counter + 1 > upgrade_info.max_amount {
 
-            return Err(AccError::RewardLimit)
+            return Err(AccError::UpgradeLimit)
 
         } else {
 
             // Increment the counter
-            nested_map.set(reward_id.clone(), counter + 1);
+            nested_map.set(upgrade_id.clone(), counter + 1);
 
             // Store the updated nested map back into the main map
-            main_map.set(reward_address.clone(), nested_map);
+            main_map.set(upgrade_address.clone(), nested_map);
 
             // Persist the main_map back to storage
             env.storage().instance().set(&"main_map", &main_map);

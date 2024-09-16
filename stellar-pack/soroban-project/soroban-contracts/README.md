@@ -40,13 +40,13 @@ The main contract handles core game operations.
 1. **deposit**: Add tokens to the user's local balance
 2. **withdraw**: Remove tokens from the user's local balance
 3. **balance**: Check the user's local balance of particular tokens
-4. **reward**: Adds a counter for depleting local balance
+4. **upgrade**: Adds a counter for depleting local balance
 
 All functions operate on the address' local balance of particular tokens.
 
-## Rewards
+## Upgrades
 
-You can add any amount of rewards to the contract, you need to invoke this function from admin wallet:
+You can add any amount of upgrades to the contract, you need to invoke this function from admin wallet:
 
 ```bash
 stellar contract invoke \
@@ -54,10 +54,10 @@ stellar contract invoke \
   --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet \
   -- \
-  set_reward \
-  --id <REWARD_UNIQUE_ID> \
-  --price <REWARD_PURCHASE_COST> \
-  --max_amount <REWARD_LIMIT_AMOUNT>
+  set_upgrade \
+  --id <UPGRADE_UNIQUE_ID> \
+  --price <UPGRADE_PURCHASE_COST> \
+  --max_amount <UPGRADE_LIMIT_AMOUNT>
 ```
 
 ## Getting Started

@@ -83,7 +83,7 @@ stellar contract invoke \
   --token <TOKEN_CONTRACT_ADDRESS>
 ```
 
-Add at least one reward to the contract (required for example to work, use id 1)
+Add at least one upgrade to the contract (required for example to work, use id 1)
 
 ```bash
 stellar contract invoke \
@@ -91,10 +91,10 @@ stellar contract invoke \
   --source <YOUR_STELLAR_SECRET_KEY> \
   --network testnet \
   -- \
-  set_reward \
+  set_upgrade \
   --id 1 \
-  --price <REWARD_PURCHASE_COST> \
-  --max_amount <REWARD_LIMIT_AMOUNT>
+  --price <UPGRADE_PURCHASE_COST> \
+  --max_amount <UPGRADE_LIMIT_AMOUNT>
 ```
 
 #### Deploy Token Contract (Optional)

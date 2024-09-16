@@ -45,7 +45,6 @@ node deploy.js
 
 The contract will be deployed on polygon mainnet by default, you can check it on polygonscan, the console will output the contract address.
 Admin for contract is the public key of the address that was specified in the .env file.
-After setting up admin, it will add two rewards to the contract automatically.
 
 #### Modify contract
 

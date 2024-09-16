@@ -41,7 +41,7 @@ The App component consists of several key blocks:
 
 5. IdlePart:
 
-- Implements idle game mechanics
+- Implements Tap-To-Earn mechanics
 - Displays game results and provides interaction buttons
 
 6. Pay Wallet: Shows a QR code for the current address to receive XLM

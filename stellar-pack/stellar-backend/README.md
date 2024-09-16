@@ -5,7 +5,7 @@ This guide explains the structure and functionality of the Colyseus backend for 
 ## Table of Contents
 1. [Base Structure](#base-structure)
 2. [Main Room Class](#main-room-class)
-3. [Tap-To-Earn Game](#idle-game)
+3. [Tap-To-Earn](#Tap-To-Earn)
 4. [Database](#database)
 5. [Getting Started](#getting-started)
 6. [Troubleshooting](#troubleshooting)
@@ -48,7 +48,7 @@ The `MainRoom` class (`MainRoom.ts`) contains core functions for user management
 5. **payService**: 
    - Updates public wallet for XLM transactions
 
-6. **deposit, withdraw, rewardWallet**: 
+6. **deposit, withdraw, upgradeWallet**: 
    - Interacts with the main contract
 
 7. **click, buyGenerator**: 
@@ -67,7 +67,7 @@ A simple Tap-To-Earn implementation with the following features:
 - Generators produce currency over time
 - Away-from-game time compensation
 - Blockchain integration:
-  - Reward system: Multiplies income based on rewards bought on the main contract
+  - Upgrade system: Multiplies income based on upgrades bought on the main contract
   - NFT system: Boosts clicking income if the user owns a specific NFT
 
 ## Database

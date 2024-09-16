@@ -203,13 +203,24 @@ export async function getFreeBalance(secretKey: string) {
     return Number(res["_value._attributes.lo._value"]) / conversionRate;
 }
 
-export async function rewardWallet(secretKey: string, rewardId: number) {
+export async function upgradeWallet(secretKey: string, upgradeId: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
     const contract = new Contract(process.env.CONTRACT);
     const res = await invokeContract(secretKey,contract.call(
-        "activate_reward", // Function name
+        "activate_upgrade", // Function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key
-        createI128(rewardId) // Reward Id
+        createI128(upgradeId) // Upgrade Id
+    ));
+    return Number(res["_value._attributes.lo._value"]);
+}
+
+export async function checkWallet(secretKey: string, upgradeId: number) {
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const contract = new Contract(process.env.CONTRACT);
+    const res = await invokeContract(secretKey,contract.call(
+        "check_upgrade", // Function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key
+        createI128(upgradeId) // Upgrade Id
     ));
     return Number(res["_value._attributes.lo._value"]);
 }

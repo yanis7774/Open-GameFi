@@ -19,7 +19,7 @@ const IdlePart = ({ onConnect }) => {
       {publicKey && (
         <div>
           <div>
-            <p>Idle Game:</p>
+            <p>Tap-To-Earn:</p>
           </div>
           <div>
             <button onClick={handleClickCurrency}>Click</button>
