@@ -80,19 +80,19 @@ export class MainRoom extends Room<MainRoomState> {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime())/1000) * (userState.generators[0]) * (5*userState.generators[1]) * (10*userState.generators[2]));
                         userState.user.lastPresence = now;
-                        if (process.env.NFT_ON == "true")
-                            userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
-                        else
-                            userState.user.nft = false;
                         await saveUserToDb(userState.user);
                         client.send("connectWallet",{
                             publicKey: userToLogin.publicId,
                             secretKey: userToLogin.secretId,
-                            mnemonic: userToLogin.mnemonic,
-                            balance: await getBalance(userToLogin.secretId)
+                            mnemonic: userToLogin.mnemonic
                         });
-                        this.updateClicker(userState);
                         client.send("systemMessage","Login Successful!");
+                        client.send("balanceUpdate",{balance: await getBalance(userToLogin.secretId), systemMessage: "Balance updated!"});
+                        if (process.env.NFT_ON == "true")
+                            userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
+                        else
+                            userState.user.nft = false;
+                        this.updateClicker(userState);
                     } else {
                         client.send("systemMessage","Username or password is wrong");
                     }

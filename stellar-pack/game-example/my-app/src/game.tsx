@@ -50,7 +50,7 @@ export default function Game({}: { currency?: number, setCurrency: (value: numbe
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <Card className="mb-4 sm:mb-8">
+        <Card className="mb-4 sm:mb-8 relative"> {/* Added relative positioning to the Card */}
           <CardHeader>
             <CardTitle className="text-2xl sm:text-3xl font-bold text-center">Tap Game</CardTitle>
           </CardHeader>
@@ -71,8 +71,8 @@ export default function Game({}: { currency?: number, setCurrency: (value: numbe
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {generatorsObj.map((generator: Generator) => {
-            const level = generators ? generators[generator.index] : 0;
-            const cost = generatorPrice ? generatorPrice[generator.index] : 0;
+            const level = generators ? generators[generator.index] : 0
+            const cost = generatorPrice ? generatorPrice[generator.index] : 0
             return (
               <Card key={generator.id} className="flex flex-col">
                 <CardHeader className="p-4">
@@ -103,8 +103,8 @@ export default function Game({}: { currency?: number, setCurrency: (value: numbe
         <div className="my-4"></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {paidGeneratorsObj.map((generator: Generator) => {
-            const level = paidGenerators ? paidGenerators[generator.index] : 0;
-            const cost = generators ? generator.baseCost : 0;
+            const level = paidGenerators ? paidGenerators[generator.index] : 0
+            const cost = generators ? generator.baseCost : 0
             return (
               <Card key={generator.id} className="flex flex-col">
                 <CardHeader className="p-4">

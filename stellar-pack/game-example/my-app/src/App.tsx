@@ -36,8 +36,19 @@ export default function App() {
   }
 
   return (
-<div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-500 to-pink-500">
-  <nav className="bg-white bg-opacity-20 p-4">
+<div className="flex flex-col h-screen bg-gradient-to-br from-purple-500 to-pink-500">
+  <h1 className="text-center text-white text-3xl p-4">Stellar Tap-to-Earn Starter Kit</h1>
+  <main className="flex-grow overflow-y-auto">
+    <div className="text-center text-white p-2">
+      {userMessage}
+    </div>
+    {currentPage === 'game' ? (
+      <Game currency={currency} setCurrency={setCurrency} />
+    ) : (
+      <Wallet currency={currency} setCurrency={setCurrency} />
+    )}
+  </main>
+  <nav className="bg-white bg-opacity-20 p-4 sticky bottom-0">
     <div className="flex justify-center space-x-4">
       <Button
         onClick={() => setCurrentPage('game')}
@@ -56,16 +67,6 @@ export default function App() {
       </Button>
     </div>
   </nav>
-  <main className="flex-grow">
-    <div className="text-center text-white p-2">
-      {userMessage}
-    </div>
-    {currentPage === 'game' ? (
-      <Game currency={currency} setCurrency={setCurrency} />
-    ) : (
-      <Wallet currency={currency} setCurrency={setCurrency} />
-    )}
-  </main>
 </div>
   )
 }

@@ -1,6 +1,6 @@
 # Colyseus Backend for Open GameFi App
 
-This guide explains the structure and functionality of the Colyseus backend for the Open GameFi app.
+This guide explains the structure and functionality of the Colyseus backend for the Open GameFi app. You can follow this [Medium Guide](https://opengamefi.medium.com/c6bbb65c473b) as an instruction too.
 
 ## Table of Contents
 1. [Base Structure](#base-structure)

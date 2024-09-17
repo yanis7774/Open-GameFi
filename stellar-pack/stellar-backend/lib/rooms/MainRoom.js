@@ -83,19 +83,19 @@ class MainRoom extends colyseus_1.Room {
                         const now = new Date();
                         userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators[0]) * (5 * userState.generators[1]) * (10 * userState.generators[2]));
                         userState.user.lastPresence = now;
-                        if (process.env.NFT_ON == "true")
-                            userState.user.nft = (yield (0, open_gamefi_1.getNftBalance)(userToLogin.secretId, process.env.NFT)) > 0;
-                        else
-                            userState.user.nft = false;
                         yield (0, dbUtils_1.saveUserToDb)(userState.user);
                         client.send("connectWallet", {
                             publicKey: userToLogin.publicId,
                             secretKey: userToLogin.secretId,
-                            mnemonic: userToLogin.mnemonic,
-                            balance: yield (0, open_gamefi_1.getBalance)(userToLogin.secretId)
+                            mnemonic: userToLogin.mnemonic
                         });
-                        this.updateClicker(userState);
                         client.send("systemMessage", "Login Successful!");
+                        client.send("balanceUpdate", { balance: yield (0, open_gamefi_1.getBalance)(userToLogin.secretId), systemMessage: "Balance updated!" });
+                        if (process.env.NFT_ON == "true")
+                            userState.user.nft = (yield (0, open_gamefi_1.getNftBalance)(userToLogin.secretId, process.env.NFT)) > 0;
+                        else
+                            userState.user.nft = false;
+                        this.updateClicker(userState);
                     }
                     else {
                         client.send("systemMessage", "Username or password is wrong");

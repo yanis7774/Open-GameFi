@@ -1,3 +1,5 @@
+![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/StellarBanner.png?raw=true)
+
 # Setup Guide
 
 This guide will walk you through setting up a full-stack project using Open GameFi.

@@ -1,6 +1,6 @@
 # Soroban Smart Contract Projects
 
-This folder contains Soroban smart contracts for the Open GameFi project. It includes a token contract and a main contract for game operations.
+This folder contains Soroban smart contracts for the Open GameFi project. It includes a token contract and a main contract for game operations. You can follow this [Medium Guide](https://medium.com/p/39c0b4ed93ea) as an instruction too.
 
 ## Table of Contents
 1. [Project Structure](#project-structure)

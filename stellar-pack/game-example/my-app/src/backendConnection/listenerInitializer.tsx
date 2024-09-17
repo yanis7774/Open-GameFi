@@ -18,7 +18,6 @@ const ListenerInitializer = () => {
         setUserPublicKey(message.publicKey);
         setUserSecretKey(message.secretKey);
         setMnemonicPhrase(message.mnemonic);
-        setBalance(message.balance);
       });
       connectedRoom.onMessage('balanceUpdate', (message: any) => {
         setBalance(message.balance);
