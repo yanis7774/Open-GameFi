@@ -1,7 +1,7 @@
-![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/GameFiBanner.png?raw=true)
+![alt text](https://github.com/yanis7774/Open-GameFi/blob/main/misc/Game-FiBanner.png?raw=true)
 
 # Video Example
-[![Watch the video](https://raw.githubusercontent.com/yanis7774/Open-GameFi/main/misc/TapDemo.png)](https://raw.githubusercontent.com/yanis7774/Open-GameFi/main/misc/TapDemo.mp4)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/imtTj4RygyI/0.jpg)](https://www.youtube.com/watch?v=imtTj4RygyI)
 
 # Open GameFi
 
