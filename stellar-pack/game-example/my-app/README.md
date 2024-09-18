@@ -2,6 +2,13 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). You can follow this [Medium Guide](https://medium.com/@opengamefi/14091e253959) as an instruction too.
 
+Run frontend with:
+
+```bash
+npm i
+npm run start
+```
+
 ## Available Scripts
 
 In the project directory, you can run:

@@ -75,12 +75,87 @@ cargo build --target wasm32-unknown-unknown --release
 
 ## Deployment
 
-For detailed deployment instructions, please refer to the main README file in the root directory of the project.
+There are two contracts in this repo:
 
-Key steps include:
-1. Building the contract
-2. Deploying using Soroban CLI
-3. Initializing the token contract (if using custom token)
+1. Base contract with deposit, withdraw, and balance functions
+2. Token contract (optional, for custom tokens)
+
+### Deploy Main Contract
+
+```bash
+cd soroban-project/soroban-contracts
+stellar contract build
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/main_contract.wasm \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet
+```
+
+Initialize the contract with admin public key argument
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ADDRESS> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  initialize \
+  --admin <ADMIN_PUBLIC_KEY> \
+  --token <TOKEN_CONTRACT_ADDRESS>
+```
+
+Add at least one upgrade to the contract (required for example to work, use id 1)
+
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ADDRESS> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  set_upgrade \
+  --id 1 \
+  --price <UPGRADE_PURCHASE_COST> \
+  --max_amount <UPGRADE_LIMIT_AMOUNT>
+```
+
+### Deploy Token Contract (Optional)
+If not using XLM, deploy the custom token contract:
+
+```bash
+cd ../soroban-token-contract
+stellar contract build
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/soroban-token-contract.wasm \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet
+```
+
+Initialize the token contract:
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  initialize \
+  --admin <ADMIN_PUBLIC_STELLAR_KEY> \
+  --decimal <DECIMAL_AMOUNT_UP_TO_18> \
+  --name <TOKEN_NAME> \
+  --symbol <TOKEN_SYMBOL>
+```
+
+Mint tokens (optional):
+```bash
+stellar contract invoke \
+  --id <CONTRACT_ID> \
+  --source <YOUR_STELLAR_SECRET_KEY> \
+  --network testnet \
+  -- \
+  mint \
+  --to <RECIPIENT_WALLET> \
+  --amount <AMOUNT_TO_MINT>
+```
+Note: You can get a Stellar account (public and secret key) on Stellar Laboratory.
 
 ## Additional Resources
 

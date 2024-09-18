@@ -2,6 +2,13 @@
 
 This guide explains the structure and functionality of the Colyseus backend for the Open GameFi app. You can follow this [Medium Guide](https://opengamefi.medium.com/c6bbb65c473b) as an instruction too.
 
+Run backend with:
+
+```bash
+npm i
+npm run start
+```
+
 ## Table of Contents
 1. [Base Structure](#base-structure)
 2. [Main Room Class](#main-room-class)
