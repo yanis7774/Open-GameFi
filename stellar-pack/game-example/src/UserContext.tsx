@@ -28,12 +28,15 @@ interface UserContextProps {
   isLoggedIn: any,
   setIsLoggedIn: any,
   paidGenerators: number[],
-  updatePaidGenerators: any
+  updatePaidGenerators: any,
+  accountType: any,
+  setAccountType: any
 }
 const UserContext = createContext<UserContextProps | undefined>(undefined);
 
 export const UserProvider = ({ children }:any) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [accountType, setAccountType] = useState("basic")
   const [userLogin, setUserLogin] = useState(null);
   const [userPublicKey, setUserPublicKey] = useState(null);
   const [userSecretKey, setUserSecretKey] = useState(null);
@@ -52,13 +55,13 @@ export const UserProvider = ({ children }:any) => {
     setGeneratorPrice([...newGenerators])
   }
   const [nftActive, setUserNftActive] = useState<boolean[]>([]);
-  const [mnemonicPhrase, setMnemonicPhrase] = useState<string>();
+  const [mnemonicPhrase, setMnemonicPhrase] = useState<string>("");
   const [payPublicKey, setPayPublicKey] = useState(null);
   const [servicePrice, setServicePrice] = useState(null);
   const [balance, setBalance] = useState(null);
 
   return (
-    <UserContext.Provider value={{ paidGenerators, updatePaidGenerators, isLoggedIn, setIsLoggedIn, balance, setBalance, servicePrice, setServicePrice, payPublicKey, setPayPublicKey, mnemonicPhrase, setMnemonicPhrase, userLogin, setUserLogin, userPublicKey, setUserPublicKey, userSecretKey, setUserSecretKey, userMessage, setUserMessage, currency, setUserCurrency, generators, updateGenerators, generatorPrice, updateGeneratorsPrice, nftActive, setUserNftActive }}>
+    <UserContext.Provider value={{ accountType, setAccountType, paidGenerators, updatePaidGenerators, isLoggedIn, setIsLoggedIn, balance, setBalance, servicePrice, setServicePrice, payPublicKey, setPayPublicKey, mnemonicPhrase, setMnemonicPhrase, userLogin, setUserLogin, userPublicKey, setUserPublicKey, userSecretKey, setUserSecretKey, userMessage, setUserMessage, currency, setUserCurrency, generators, updateGenerators, generatorPrice, updateGeneratorsPrice, nftActive, setUserNftActive }}>
       {children}
     </UserContext.Provider>
   );

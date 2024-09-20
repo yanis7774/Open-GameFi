@@ -1,10 +1,12 @@
-import { BASE_FEE, Contract, Keypair, Networks, SorobanRpc, TransactionBuilder, xdr } from "stellar-sdk";
+import { BASE_FEE, Contract, Keypair, Networks, SorobanRpc, Transaction, TransactionBuilder, xdr } from "stellar-sdk";
 const bip39 = require('bip39');
 const StellarHDWallet = require('stellar-hd-wallet');
 const axios = require('axios');
 
 let conversionRate = 10000000;
 let withdrawLimit = 10000000000000;
+let contractAddress = process.env.CONTRACT;
+let contractToken = process.env.TOKEN;
 
 export async function setConversionRate(newRate: number) {
     conversionRate = newRate;
@@ -12,6 +14,14 @@ export async function setConversionRate(newRate: number) {
 
 export async function setWithdrawLimit(newLimit: number) {
     withdrawLimit = newLimit;
+}
+
+export async function setContractAddress(newAddress: string) {
+    contractAddress = newAddress;
+}
+
+export async function setTokenAddress(newToken: string) {
+    contractToken = newToken;
 }
 
 export function getStellarAccountFromMnemonic(mnemonic: any) {
@@ -47,6 +57,38 @@ export async function createStellarAccount() {
         secretKey: secretKey
     }
 }
+// Helper function to extract and decode the transaction result
+function extractTransactionResult(transactionResponse: any) {
+    if (transactionResponse.resultMetaXdr) {
+      const transactionMeta = xdr.TransactionMeta.fromXDR(transactionResponse.resultMetaXdr, 'base64');
+      if (transactionMeta.v3().sorobanMeta() && transactionMeta.v3().sorobanMeta().returnValue()) {
+        return decodeSorobanResult(transactionMeta.v3().sorobanMeta().returnValue());
+      }
+    }
+    return null;
+  }
+  
+
+// Helper function to decode Soroban result
+function decodeSorobanResult(returnValue: any) {
+    // The exact decoding will depend on the type of value returned by your contract
+    // This is a basic example that handles a few common types
+    if (returnValue.switch().name === 'scvU32') {
+      return returnValue.u32();
+    } else if (returnValue.switch().name === 'scvI32') {
+      return returnValue.i32();
+    } else if (returnValue.switch().name === 'scvU64') {
+      return returnValue.u64().toString();
+    } else if (returnValue.switch().name === 'scvI64') {
+      return returnValue.i64().toString();
+    } else if (returnValue.switch().name === 'scvString') {
+      return returnValue.string().toString();
+    } else if (returnValue.switch().name === 'scvBool') {
+      return returnValue.bool();
+    }
+    // Add more type handling as needed
+    return `Unhandled type: ${returnValue.switch().name}`;
+}
 
 // This function is used to create i128 type number
 function createI128(value: number): xdr.ScVal {
@@ -58,6 +100,84 @@ function createI128(value: number): xdr.ScVal {
             lo: xdr.Uint64.fromString(low.toString()),
         })
     );
+}
+
+async function createTransaction(publicKey: string) {
+    const server = new SorobanRpc.Server("https://soroban-testnet.stellar.org");
+    // Fetch the account details
+    const account = await server.getAccount(publicKey);
+  
+    // Prepare the transaction
+    const builder = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: Networks.TESTNET
+      });
+
+    return { server, builder, contract: new Contract(contractAddress)};
+}
+
+async function finishTransaction(server: SorobanRpc.Server, builder: TransactionBuilder) {
+
+    // Prepare the transaction
+    builder.setTimeout(300);
+
+    // Build the transaction
+    const transaction = builder.build();
+  
+    // Prepare the transaction
+    const preparedTransaction = await server.prepareTransaction(transaction);
+  
+    // Convert the transaction to XDR
+    const xdrString = preparedTransaction.toXDR();
+  
+    return xdrString;
+}
+
+export async function submitTransaction(signedXdr: any, returnValue: string = "") {
+    try {
+        const server = new SorobanRpc.Server("https://soroban-testnet.stellar.org")
+        // Decode the signed XDR
+        let decodedTransaction
+        if (typeof signedXdr === 'string') {
+            decodedTransaction = xdr.TransactionEnvelope.fromXDR(signedXdr, 'base64')
+        } else if (signedXdr.signedTxXdr) {
+            decodedTransaction = xdr.TransactionEnvelope.fromXDR(signedXdr.signedTxXdr, 'base64')
+        } else {
+            throw new Error('Invalid signed XDR format')
+        }
+
+        const transaction = new Transaction(decodedTransaction, Networks.TESTNET)
+
+        const sendResponse = await server.sendTransaction(transaction)
+        console.log(`Transaction submitted: ${sendResponse.hash}`)
+
+        let result: any;
+        while (true) {
+            await new Promise(resolve => setTimeout(resolve, 2000)) // Wait for 2 seconds
+            try {
+                const response = await server.getTransaction(sendResponse.hash)
+
+                if (response.status === "SUCCESS") {
+                    console.log("Transaction successful!")
+                    result = response.returnValue // Return value of the contract function
+                    break
+                } else if (response.status === "FAILED") {
+                    throw new Error(`Transaction failed: ${JSON.stringify(response)}`)
+                }
+            } catch (e: any) {
+                if (e.message.includes("not found")) {
+                    console.log("Transaction not yet processed, retrying...")
+                } else {
+                    throw e
+                }
+            }
+        }
+
+        return { hash: sendResponse.hash, result: returnValue == "balance" ? result["_value"][0]["_attributes"]["val"]["_value"]["_attributes"]["lo"]["_value"] : (returnValue == "number" ? result["_value"]["_attributes"]["lo"]["_value"] : undefined)}
+    } catch (error) {
+        console.error("Error submitting transaction:", error)
+        throw error
+    }
 }
 
 export async function invokeContract(secret: string, invoke: any) {
@@ -149,8 +269,8 @@ export async function parseResponse(response: any): Promise<ParsedResult> {
 
 export async function depositBalance(secretKey: string, amount: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
-    const tokenContract = new Contract(process.env.TOKEN);
+    const contract = new Contract(contractAddress);
+    const tokenContract = new Contract(contractToken);
     // filling contract invoke with arguments
     const res = await invokeContract(secretKey,contract.call(
         "deposit", // function name
@@ -162,9 +282,26 @@ export async function depositBalance(secretKey: string, amount: number) {
     return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
 }
 
+export async function depositBalanceXdr(publicKey: string, amount: number) {
+    const sourceKeypair = Keypair.fromPublicKey(publicKey);
+    const tokenContract = new Contract(contractToken);
+    const transactionObj = await createTransaction(publicKey);
+    transactionObj.builder.addOperation(transactionObj.contract.call(
+        "deposit", 
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public address
+        xdr.ScVal.scvAddress(tokenContract.address().toScAddress()), // Token address
+        createI128(conversionRate*amount), // Amount to deposit
+        createI128(conversionRate*withdrawLimit) // Setting withdraw limit));
+    ));
+    return {
+        network: Networks.TESTNET,
+        xdr: await finishTransaction(transactionObj.server, transactionObj.builder)
+    };
+}
+
 export async function withdrawBalance(secretKey: string, amount: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
+    const contract = new Contract(contractAddress);
     const res = await invokeContract(secretKey,contract.call(
         "withdraw", // function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public address
@@ -173,39 +310,23 @@ export async function withdrawBalance(secretKey: string, amount: number) {
     return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
 }
 
-export async function withdrawFreeFunds(secretKey: string, amount: number) {
-    const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
-    const res = await invokeContract(secretKey,contract.call(
-        "withdraw_free", // function name
+export async function withdrawBalanceXdr(publicKey: string, amount: number) {
+    const sourceKeypair = Keypair.fromPublicKey(publicKey);
+    const transactionObj = await createTransaction(publicKey);
+    transactionObj.builder.addOperation(transactionObj.contract.call(
+        "withdraw", // function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public address
         createI128(conversionRate*amount) // Withdraw amount
     ));
-    return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
-}
-
-export async function getBalance(secretKey: string) {
-    const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
-    const res = await invokeContract(secretKey,contract.call(
-        "get_balance", // Function name
-        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())) // Public key
-    ));
-    return Number(res["_value._attributes.lo._value"]) / conversionRate;
-}
-
-export async function getFreeBalance(secretKey: string) {
-    const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
-    const res = await invokeContract(secretKey,contract.call(
-        "get_free_balance" // Function name
-    ));
-    return Number(res["_value._attributes.lo._value"]) / conversionRate;
+    return {
+        network: Networks.TESTNET,
+        xdr: await finishTransaction(transactionObj.server, transactionObj.builder)
+    };
 }
 
 export async function upgradeWallet(secretKey: string, upgradeId: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
+    const contract = new Contract(contractAddress);
     const res = await invokeContract(secretKey,contract.call(
         "activate_upgrade", // Function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key
@@ -214,9 +335,52 @@ export async function upgradeWallet(secretKey: string, upgradeId: number) {
     return Number(res["_value._attributes.lo._value"]);
 }
 
+export async function upgradeWalletXdr(publicKey: string, upgradeId: number) {
+    const sourceKeypair = Keypair.fromPublicKey(publicKey);
+    const transactionObj = await createTransaction(publicKey);
+    transactionObj.builder.addOperation(transactionObj.contract.call(
+        "activate_upgrade", // Function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key
+        createI128(upgradeId) // Upgrade Id
+    ));
+    return {
+        network: Networks.TESTNET,
+        xdr: await finishTransaction(transactionObj.server, transactionObj.builder)
+    };
+}
+
+export async function withdrawFreeFunds(secretKey: string, amount: number) {
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const contract = new Contract(contractAddress);
+    const res = await invokeContract(secretKey,contract.call(
+        "withdraw_free", // function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public address
+        createI128(conversionRate*amount) // Withdraw amount
+    ));
+    return Number(res["_value.0._attributes.val._value._attributes.lo._value"]) / conversionRate;
+}
+
+export async function getBalance(secretKey: string, address: string) {
+    const checkKeypair = Keypair.fromPublicKey(address);
+    const contract = new Contract(contractAddress);
+    const res = await invokeContract(secretKey,contract.call(
+        "get_balance", // Function name
+        xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(checkKeypair.xdrPublicKey())) // Public key
+    ));
+    return Number(res["_value._attributes.lo._value"]) / conversionRate;
+}
+
+export async function getFreeBalance(secretKey: string) {
+    const contract = new Contract(contractAddress);
+    const res = await invokeContract(secretKey,contract.call(
+        "get_free_balance" // Function name
+    ));
+    return Number(res["_value._attributes.lo._value"]) / conversionRate;
+}
+
 export async function checkWallet(secretKey: string, upgradeId: number) {
     const sourceKeypair = Keypair.fromSecret(secretKey);
-    const contract = new Contract(process.env.CONTRACT);
+    const contract = new Contract(contractAddress);
     const res = await invokeContract(secretKey,contract.call(
         "check_upgrade", // Function name
         xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(sourceKeypair.xdrPublicKey())), // Public key

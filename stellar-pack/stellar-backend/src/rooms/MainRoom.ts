@@ -1,23 +1,27 @@
 import { Client, Room } from "colyseus";
 import { MainRoomState, Player } from "./schema/MainRoomState";
-import { getUser, initUser, saveUserToDb } from "../db/dbUtils";
-import { createStellarAccount, depositBalance, getBalance, getNftBalance, getStellarAccountFromMnemonic, upgradeWallet, withdrawBalance } from "open-gamefi";
+import { getUser, getUserByAddress, initUser, saveUserToDb } from "../db/dbUtils";
+import { createStellarAccount, depositBalance, getBalance, getNftBalance, getStellarAccountFromMnemonic, setContractAddress, setTokenAddress, upgradeWallet, withdrawBalance } from "open-gamefi";
+import { depositBalanceXdr, submitTransaction, upgradeWalletXdr, withdrawBalanceXdr } from "open-gamefi/dist/stellar";
 const bcrypt = require('bcrypt');
 
 const saltRounds = 10;
 const payToPublicKey = "GA7K4RFFZ2EJXLCYVGQJU7PUKTEHKGQW6UAQXWEE6BDWN26HEJAQYDSF";
+let conversionRate = 10000000;
 
 export class MainRoom extends Room<MainRoomState> {
     onCreate(options: any) {
         this.setState(new MainRoomState());
         this.setUp(this);
         this.setSeatReservationTime(60);
+        setTokenAddress(process.env.TOKEN);
+        setContractAddress(process.env.CONTRACT);
         this.maxClients = 100;
 
         setInterval(()=>{
             this.state.users.forEach((player: Player)=>{
                 if (player.user != undefined && player.client != undefined) {
-                    player.currency += player.generators[0];
+                    player.currency += this.getGeneratorValue(player) + this.getPaidGeneratorValue(player);
                     this.updateClicker(player);
                 }
             })
@@ -42,7 +46,7 @@ export class MainRoom extends Room<MainRoomState> {
                 publicKey: existingAccount.publicKey,
                 secretKey: existingAccount.secretKey,
                 mnemonic: existingAccount.mnemonic,
-                balance: await getBalance(existingAccount.secretKey)
+                balance: await getBalance(process.env.CALLER_ADDRESS,existingAccount.publicKey)
             });
             client.send("systemMessage","Wallet connected!");
         });
@@ -66,6 +70,37 @@ export class MainRoom extends Room<MainRoomState> {
             userState.user = undefined;
         });
 
+        this.onMessage("loginFreighter", async (client, msg) => {
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user == undefined) {
+                const userToLogin = await getUserByAddress(msg.login);
+                client.send("systemMessage","Logging in process...");
+                if (userToLogin) {
+                    // sent password is compared using bcrypt with the one in database
+                    userState.user = userToLogin;
+                    userState.currency = userToLogin.currency;
+                    userState.generators = userToLogin.generators;
+                    const now = new Date();
+                    userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime())/1000) * (userState.generators[0]) * (5*userState.generators[1]) * (10*userState.generators[2]));
+                    userState.user.lastPresence = now;
+                    await saveUserToDb(userState.user);
+                    client.send("connectWallet",{
+                        publicKey: userToLogin.publicId,
+                        accountType: "freighter"
+                    });
+                    client.send("systemMessage","Login Successful!");
+                    client.send("balanceUpdate",{balance: await getBalance(process.env.CALLER_ADDRESS, userToLogin.publicId), systemMessage: "Balance updated!"});
+                    // if (process.env.NFT_ON == "true")
+                    //     userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
+                    // else
+                        userState.user.nft = false;
+                    this.updateClicker(userState);
+                } else {
+                    client.send("systemMessage","Username or password is wrong");
+                }
+            }
+        })
+
         this.onMessage("login", async (client, msg) => {
             let userState = this.state.users.get(client.sessionId);
             if (userState.user == undefined) {
@@ -87,7 +122,7 @@ export class MainRoom extends Room<MainRoomState> {
                             mnemonic: userToLogin.mnemonic
                         });
                         client.send("systemMessage","Login Successful!");
-                        client.send("balanceUpdate",{balance: await getBalance(userToLogin.secretId), systemMessage: "Balance updated!"});
+                        client.send("balanceUpdate",{balance: await getBalance(process.env.CALLER_ADDRESS, userToLogin.publicId), systemMessage: "Balance updated!"});
                         if (process.env.NFT_ON == "true")
                             userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
                         else
@@ -108,6 +143,19 @@ export class MainRoom extends Room<MainRoomState> {
             client.send("balanceUpdate",{balance: res, systemMessage: "Withdraw success!"});
         });
 
+        this.onMessage("xdrWithdrawWallet", async (client, msg) => {
+            console.log("WITHDRAW: ", msg);
+            client.send("systemMessage","Withdrawing...");
+            const xdrObj = await withdrawBalanceXdr(msg.public, Number(msg.amount));
+            client.send("withdrawWalletSign", xdrObj);
+        })
+
+        this.onMessage("signedWithdrawWallet", async (client, msg) => {
+            client.send("systemMessage","Sending Transaction...");
+            const res: any = await submitTransaction(msg.signedXdr, "balance");
+            client.send("balanceUpdate",{balance: Number(res.result) / conversionRate, systemMessage: "Withdraw success!"});
+        })
+
         this.onMessage("depositWallet", async (client, msg) => {
             console.log("DEPOSIT: ", msg);
             client.send("systemMessage","Depositing...");
@@ -115,10 +163,23 @@ export class MainRoom extends Room<MainRoomState> {
             client.send("balanceUpdate",{balance: res, systemMessage: "Deposit success!"});
         });
 
+        this.onMessage("xdrDepositWallet", async (client, msg) => {
+            console.log("DEPOSIT: ", msg);
+            client.send("systemMessage","Depositing...");
+            const xdrObj = await depositBalanceXdr(msg.public, Number(msg.amount));
+            client.send("depositWalletSign", xdrObj);
+        })
+
+        this.onMessage("signedDepositWallet", async (client, msg) => {
+            client.send("systemMessage","Sending Transaction...");
+            const res: any = await submitTransaction(msg.signedXdr, "balance");
+            client.send("balanceUpdate",{balance: Number(res.result) / conversionRate, systemMessage: "Deposit success!"});
+        })
+
         this.onMessage("upgradeWallet", async (client, msg) => {
             client.send("systemMessage","Upgrading...");
             const res = await upgradeWallet(msg.secret, msg.index+1);
-            const balance = await getBalance(msg.secret);
+            const balance = await getBalance(process.env.CALLER_ADDRESS, msg.public);
             let userState = this.state.users.get(client.sessionId);
             userState.user.paidGenerators[msg.index] = res;
             userState.paidGenerators[msg.index] = res;
@@ -126,6 +187,26 @@ export class MainRoom extends Room<MainRoomState> {
             client.send("balanceUpdate",{balance: balance, systemMessage: `Upgrading success!`});
             this.updateClicker(userState);
         });
+
+        this.onMessage("xdrUpgradeWallet", async (client, msg) => {
+            console.log("UPGRADE: ", msg);
+            client.send("systemMessage","Upgrading...");
+            const xdrObj = await upgradeWalletXdr(msg.public, msg.index+1);
+            client.send("upgradeWalletSign", {xdrObj: xdrObj, index: msg.index} );
+        })
+
+        this.onMessage("signedUpgradeWallet", async (client, msg) => {
+            client.send("systemMessage","Sending Transaction...");
+            const res: any = await submitTransaction(msg.signedXdr, "number");
+            let userState = this.state.users.get(client.sessionId);
+            userState.user.paidGenerators[msg.index] = Number(res.result);
+            userState.paidGenerators[msg.index] = Number(res.result);
+            await saveUserToDb(userState.user);
+            console.log("SUCCESS, FOR NOW");
+            const balance = await getBalance(process.env.CALLER_ADDRESS, userState.user.publicId);
+            client.send("balanceUpdate",{balance: balance, systemMessage: "Upgrading success!"});
+            this.updateClicker(userState);
+        })
 
         this.onMessage("register", async (client, msg) => {
             client.send("systemMessage","Register in process...");
@@ -210,6 +291,10 @@ export class MainRoom extends Room<MainRoomState> {
 
     getGeneratorValue(userState: Player) {
         return (userState.generators[0]) * (5*userState.generators[1]) * (10*userState.generators[2])
+    }
+
+    getPaidGeneratorValue(userState: Player) {
+        return (userState.paidGenerators[0]) * (5*userState.paidGenerators[1]) * (10*userState.paidGenerators[2])
     }
 
 }

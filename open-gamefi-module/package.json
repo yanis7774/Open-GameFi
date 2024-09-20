@@ -1,6 +1,6 @@
 {
   "name": "open-gamefi",
-  "version": "0.0.23",
+  "version": "0.0.40",
   "description": "Simple library to call contracts and operate blockchain networks. Part of Open-GameFi starter kit\n\n",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",

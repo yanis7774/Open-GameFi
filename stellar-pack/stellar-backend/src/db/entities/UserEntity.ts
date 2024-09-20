@@ -13,12 +13,14 @@ export class User extends BaseEntity {
     @Property({type: 'array'}) generators: number[] = [0,0,0];
     @Property({type: 'array'}) paidGenerators: number[] = [0,0,0];
     @Property({type: 'boolean'}) nft: boolean = false;
+    @Property({type: 'string'}) accountType: string = "basic";
 
     constructor(username: string | undefined,
         publicId: string,
         password: string,
         secretId: string,
-        mnemonic: string
+        mnemonic: string,
+        accType: string = "basic"
     ) {
         super();
         this.publicId = publicId;
@@ -26,6 +28,7 @@ export class User extends BaseEntity {
         this.password = password;
         this.secretId = secretId;
         this.mnemonic = mnemonic;
+        this.accountType = accType;
     }
 
 }

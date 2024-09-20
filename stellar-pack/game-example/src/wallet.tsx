@@ -12,16 +12,23 @@ export default function Wallet({ currency = 0, setCurrency }: { currency?: numbe
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [showPrivateKey, setShowPrivateKey] = useState(false)
-  const { balance, userSecretKey, mnemonicPhrase, userPublicKey } = useUser()
+  const { accountType, balance, userSecretKey, mnemonicPhrase, userPublicKey } = useUser()
   const { sendMessage } = useRoom()
 
   const handleDeposit = () => {
     const amount = parseFloat(depositAmount)
     if (!isNaN(amount) && amount > 0) {
-      sendMessage("depositWallet", {
-        secret: userSecretKey,
-        amount: amount,
-      })
+      if (accountType === "freighter") {
+        sendMessage("xdrDepositWallet", {
+          public: userPublicKey,
+          amount: amount,
+        })
+      } else {
+        sendMessage("depositWallet", {
+          secret: userSecretKey,
+          amount: amount,
+        })
+      }
       setDepositAmount('')
     }
   }
@@ -29,10 +36,17 @@ export default function Wallet({ currency = 0, setCurrency }: { currency?: numbe
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawAmount)
     if (!isNaN(amount) && amount > 0 && amount <= balance) {
-      sendMessage("withdrawWallet", {
-        secret: userSecretKey,
-        amount: amount,
-      })
+      if (accountType === "freighter") {
+        sendMessage("xdrWithdrawWallet", {
+          public: userPublicKey,
+          amount: amount,
+        })
+      } else {
+        sendMessage("withdrawWallet", {
+          secret: userSecretKey,
+          amount: amount,
+        })
+      }
       setWithdrawAmount('')
     }
   }
@@ -92,19 +106,21 @@ export default function Wallet({ currency = 0, setCurrency }: { currency?: numbe
               </div>
             </div>
           </div>
-          <div className="text-center">
-            <Button onClick={() => setShowPrivateKey(prev => !prev)} className="whitespace-nowrap">
-              Show Private Key
-            </Button>
-            {showPrivateKey && (
-              <div className="mt-4">
-                <div className="text-xs font-medium text-gray-500">Your Private Key:</div> {/* Made font smaller */}
-                <div className="text-xs font-bold break-words">{userSecretKey}</div> {/* Made font smaller */}
-                <div className="text-xs font-medium text-gray-500">Your Mnemonic Phrase:</div> {/* Made font smaller */}
-                <div className="text-xs font-bold">{mnemonicPhrase}</div> {/* Made font smaller */}
-              </div>
-            )}
-          </div>
+          {accountType !== "freighter" && (
+            <div className="text-center">
+              <Button onClick={() => setShowPrivateKey(prev => !prev)} className="whitespace-nowrap">
+                Show Private Key
+              </Button>
+              {showPrivateKey && (
+                <div className="mt-4">
+                  <div className="text-xs font-medium text-gray-500">Your Private Key:</div> {/* Made font smaller */}
+                  <div className="text-xs font-bold break-words">{userSecretKey}</div> {/* Made font smaller */}
+                  <div className="text-xs font-medium text-gray-500">Your Mnemonic Phrase:</div> {/* Made font smaller */}
+                  <div className="text-xs font-bold">{mnemonicPhrase}</div> {/* Made font smaller */}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

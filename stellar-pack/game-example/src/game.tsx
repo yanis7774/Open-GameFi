@@ -31,7 +31,7 @@ const generatorsObj: Generator[] = [
 
 export default function Game({}: { currency?: number, setCurrency: (value: number | ((prevValue: number) => number)) => void }) {
   const [taps, setTaps] = useState(0);
-  const { currency, balance, userSecretKey, generators, paidGenerators, generatorPrice } = useUser();
+  const { accountType, currency, balance, userSecretKey, generators, userPublicKey, paidGenerators, generatorPrice } = useUser();
   const { sendMessage } = useRoom();
 
   const handleTap = () => {
@@ -44,7 +44,10 @@ export default function Game({}: { currency?: number, setCurrency: (value: numbe
   }
 
   const buyPaidGenerator = (generator: Generator) => {
-    sendMessage("upgradeWallet", { secret: userSecretKey, index: generator.index })
+    if (accountType === "freighter")
+      sendMessage("xdrUpgradeWallet", { public: userPublicKey, index: generator.index })
+    else
+      sendMessage("upgradeWallet", { secret: userSecretKey, public: userPublicKey, index: generator.index })
   }
 
   return (
