@@ -34,70 +34,19 @@ Connect and collaborate with like-minded developers and innovators. Get support,
 
 ## Project Overview
 
-### 1. Colyseus Backend Setup
-- **Purpose:** Set up a real-time game server.
-- **Components:**
-  - Configurations
-  - Game rooms
-  - State management
-- **Benefits:** Easily synchronize game state between the server and clients.
+| Feature | Description |
+|---------|-------------|
+| **1. Colyseus Backend Setup** | Real-time game server setup with configurations, game rooms, and state management for seamless game state synchronization. |
+| **2. Database Connection** | Utilizes `mikro-orm` with MongoDB, featuring utility files for efficient data storage and retrieval. |
+| **3. Soroban Smart Contract** | Provides a ready-to-use smart contract with deployment commands on Soroban (Stellar's smart contract system). |
+| **4. Token Deposit/Withdraw Module** | Supports deposits and withdrawals for XLM and custom tokens, with custodial and non-custodial wallet options. |
+| **5. Upgrade Purchasing System** | Manages game upgrades using XLM or custom tokens, serving as a crucial element of the game economy. |
+| **6. Token/NFT Creation Contract** | Soroban smart contract for creating custom tokens or NFTs representing unique in-game assets or achievements. |
+| **7. Smart Contract Interaction NPM Module** | Reusable Node.js package providing functions for interacting with smart contracts, simplifying blockchain integration. |
+| **8. React Frontend Setup** | Includes user interface design, backend connection, message sending, and local state management. |
+| **9. Backend Connection Configuration** | Real-time update listeners and connection state management for smooth client-server communication. |
+| **10. Tap-To-Earn Example** | A complete game example featuring frontend/backend integration, passive income mechanics, and NFT-based upgrades. |
 
-### 2. Database Connection
-- **Technology:** mikro-orm with MongoDB.
-- **Features:** 
-  - Utilities file for simplified queries.
-- **Advantage:** Efficient data storage and retrieval.
-
-### 3. Soroban Smart Contract
-- **Includes:** 
-  - Ready-to-use smart contract.
-  - Deployment commands.
-- **Platform:** Soroban (Stellar's smart contract system).
-
-### 4. Token Deposit/Withdraw Module
-- **Functionality:** Handle deposits and withdrawals.
-- **Supported Tokens:**
-  - XLM (Stellar's native currency)
-  - Custom tokens
-- **Operations:** Balance checks, deposit processing, and withdrawal execution.
-- **Wallets** Supports custodial and non-custodial wallets.
-
-### 5. Upgrade Purchasing System
-- **Currency:** Contract currency (XLM or custom token).
-- **Implementation:** Upgrades managed as a counter.
-- **Importance:** Crucial for game economy and progression.
-
-### 6. Token/NFT Creation Contract
-- **Type:** Soroban smart contract.
-- **Purpose:** Create custom tokens or NFTs.
-- **Use Case:** Represent unique in-game assets or achievements.
-
-### 7. Smart Contract Interaction NPM Module
-- **Format:** Reusable Node.js package.
-- **Content:** Functions to invoke smart contracts.
-- **Benefit:** Simplifies blockchain functionality integration.
-
-### 8. React Frontend Setup
-- **Components:**
-  - User interface design
-  - Backend connection
-  - Message sending to backend
-  - Local state management
-
-### 9. Backend Connection Configuration
-- **Features:** 
-  - Listeners for real-time updates.
-  - Connection state management.
-- **Importance:** Ensures smooth data flow between client and server.
-
-### 10. Tap-To-Earn Example
-- **Scope:** Complete game implementation.
-- **Includes:**
-  - Frontend and backend components.
-- **Mechanics:**
-  - Passive income from generators.
-  - Upgrades through upgrades and NFTs.
-- **Purpose:** Practical demonstration of feature integration.
 
 ## Curreny blockchain readiness
 
