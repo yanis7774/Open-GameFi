@@ -5,7 +5,8 @@ import { Client } from "colyseus";
 export class Player extends Schema {
     user: User | undefined;
     currency: number = 0;
-    generators: number = 0;
+    generators: number[] = [0,0,0];
+    paidGenerators: number[] = [0,0,0];
     client: Client;
 
     constructor(client: Client) {

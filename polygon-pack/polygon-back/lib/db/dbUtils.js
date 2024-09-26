@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.initUser = initUser;
 exports.saveUserToDb = saveUserToDb;
 exports.getUser = getUser;
+exports.getUserByAddress = getUserByAddress;
 exports.initDatabase = initDatabase;
 const database_config_1 = require("./database.config");
 const UserEntity_1 = require("./entities/UserEntity");
@@ -49,13 +50,13 @@ function repoOperation(repoType_1, operation_1) {
         }
     });
 }
-function initUser(username, password, publicId, secretId, mnemonic) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const existingUser = yield repoOperation(UserEntity_1.User, opType.findOne, { username: `${username}` });
+function initUser(username_1, password_1, publicId_1, secretId_1, mnemonic_1) {
+    return __awaiter(this, arguments, void 0, function* (username, password, publicId, secretId, mnemonic, accType = "basic") {
+        const existingUser = yield repoOperation(UserEntity_1.User, opType.findOne, { publicId: `${publicId}` });
         if (existingUser) {
             return existingUser;
         }
-        const user = new UserEntity_1.User(username, publicId, password, secretId, mnemonic);
+        const user = new UserEntity_1.User(username, publicId, password, secretId, mnemonic, accType);
         yield repoOperation(UserEntity_1.User, opType.flush, user);
         return user;
     });
@@ -68,6 +69,15 @@ function saveUserToDb(user) {
 function getUser(username) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield repoOperation(UserEntity_1.User, opType.findOne, { username: `${username}` });
+    });
+}
+function getUserByAddress(address) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const user = yield repoOperation(UserEntity_1.User, opType.findOne, { publicId: `${address}` });
+        if (user)
+            return user;
+        else
+            return yield initUser("", "", address, "", "", "wallet");
     });
 }
 function initDatabase() {

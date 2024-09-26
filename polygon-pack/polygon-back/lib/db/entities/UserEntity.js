@@ -10,18 +10,20 @@ exports.User = void 0;
 const core_1 = require("@mikro-orm/core");
 const BaseEntity_1 = require("./BaseEntity");
 let User = class User extends BaseEntity_1.BaseEntity {
-    constructor(username, publicId, password, secretId, mnemonic) {
+    constructor(username, publicId, password, secretId, mnemonic, accType = "basic") {
         super();
         this.lastPresence = new Date();
         this.currency = 0;
-        this.generators = 0;
-        this.reward = 0;
+        this.generators = [0, 0, 0];
+        this.paidGenerators = [0, 0, 0];
         this.nft = false;
+        this.accountType = "basic";
         this.publicId = publicId;
         this.username = username;
         this.password = password;
         this.secretId = secretId;
         this.mnemonic = mnemonic;
+        this.accountType = accType;
     }
 };
 exports.User = User;
@@ -47,14 +49,17 @@ __decorate([
     (0, core_1.Property)({ type: 'number' })
 ], User.prototype, "currency", void 0);
 __decorate([
-    (0, core_1.Property)({ type: 'number' })
+    (0, core_1.Property)({ type: 'array' })
 ], User.prototype, "generators", void 0);
 __decorate([
-    (0, core_1.Property)({ type: 'number' })
-], User.prototype, "reward", void 0);
+    (0, core_1.Property)({ type: 'array' })
+], User.prototype, "paidGenerators", void 0);
 __decorate([
     (0, core_1.Property)({ type: 'boolean' })
 ], User.prototype, "nft", void 0);
+__decorate([
+    (0, core_1.Property)({ type: 'string' })
+], User.prototype, "accountType", void 0);
 exports.User = User = __decorate([
     (0, core_1.Entity)()
 ], User);

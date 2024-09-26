@@ -3,9 +3,11 @@ pragma solidity ^0.8.7;
 
 contract TokenStorage {
     address public admin;
+    uint256 public locked_funds;
 
     // Mapping to store balances of each user
     mapping(address => uint256) public balances;
+    mapping(address => uint256) public balance_exists;
 
     // Nested mapping to store counters for each address and ID
     mapping(address => mapping(uint256 => uint256)) public counters;
@@ -22,6 +24,24 @@ contract TokenStorage {
     constructor(address newAdmin) {
         require(newAdmin != address(0), "Invalid admin address");
         admin = newAdmin;
+        locked_funds = 0;
+    }
+
+    function checkLockedFunds() public view returns (uint256) {
+        return locked_funds;
+    }
+    
+    function getContractBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function withdrawFreeFunds(uint256 amount) public returns (bool) {
+        require(msg.sender == admin, "Not authorized");
+        require(amount > getContractBalance() - locked_funds, "Insufficient funds");
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
+
+        return true;
     }
 
     // Function to add new ID properties (admin only)
@@ -37,6 +57,11 @@ contract TokenStorage {
         return idProperties[id].purchasePrice;
     }
 
+    function getIDAmount(address counter_address, uint256 id) public view returns (uint256) {
+        require(idProperties[id].purchasePrice != 0, "Key is not set");
+        return counters[counter_address][id];
+    }
+
     function getIDLimit(uint256 id) public view returns (uint256) {
         require(idProperties[id].purchasePrice != 0, "Key is not set");
         return idProperties[id].maxLimit;
@@ -45,15 +70,20 @@ contract TokenStorage {
     // Function to deposit tokens to the contract
     function deposit() public payable returns (uint256) {
         require(msg.value > 0, "Amount must be greater than zero");
-
+        balance_exists[msg.sender] = 1;
         balances[msg.sender] += msg.value;
+        locked_funds += msg.value;
 
         return balances[msg.sender];
     }
 
     // Function to view sender balance
-    function getBalance() public view returns (uint256) {
-        return balances[msg.sender];
+    function getBalance(address address_check) public view returns (uint256) {
+        if (balance_exists[address_check] != 0) {
+            return balances[address_check];
+        } else {
+            return 0;
+        }
     }
 
     // Withdraw function to withdraw MATIC
@@ -63,6 +93,7 @@ contract TokenStorage {
 
         // Update the balance before sending to prevent re-entrancy attacks
         balances[msg.sender] -= amount;
+        locked_funds -= amount;
 
         // Transfer MATIC back to the sender
         (bool success, ) = msg.sender.call{value: amount}("");
@@ -76,15 +107,11 @@ contract TokenStorage {
 
         // Deduct the cost from the user's balance
         balances[msg.sender] -= idProperties[id].purchasePrice;
+        locked_funds -= idProperties[id].purchasePrice;
 
         // Increment the counter for the given ID
         counters[msg.sender][id]++;
 
-        return counters[msg.sender][id];
-    }
-    
-    // Function to get the counter value for a specific ID
-    function getCounter(uint256 id) public view returns (uint256) {
         return counters[msg.sender][id];
     }
 }

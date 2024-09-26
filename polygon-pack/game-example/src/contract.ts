@@ -1,7 +1,8 @@
-const { ethers } = require("ethers");
-require('dotenv').config();
+import { ethers } from 'ethers';
 
-const contractABI = [
+// You'll need to replace these with your actual contract ABI and address
+// Empty for now
+export const contractABI = [
 	{
 		"inputs": [
 			{
@@ -332,63 +333,59 @@ const contractABI = [
 		"type": "function"
 	}
 ]
+const contractAddress = '0xYourContractAddressHere';
 
-async function main() {
-    // Set up a provider for the Polygon network
-    const provider = new ethers.JsonRpcProvider(process.env.JSON_RPC);
-
-    // Replace with your own private key or load from a secure source
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-
-    // Simple Solidity contract (this is an example, use your own contract)
-    
-    const contractBytecode = process.env.CONTRACT_BYTECODE;
-
-    // Create a ContractFactory and deploy the contract
-    const ContractFactory = new ethers.ContractFactory(contractABI, contractBytecode, wallet);
-	//const estimatedGas = await ethers.provider.estimateGas(contract.deploymentTransaction(tokenAddress).data);
-	// Deployment
-
-	var gas = 500000000000
-    const contract = await ContractFactory.deploy(process.env.PUBLIC_KEY,{
-		gasPrice: gas
-	});
-
-	await contract.waitForDeployment();
-    
-    console.log("CONTRACT: ", contract);
-
-	console.log("CONTRACT ADDRESS: ", contract.target);
-
-    console.log("Contract deployment confirmed!");
-
-	const newContract = new ethers.Contract(contract.target, contractABI, wallet);
-
-	console.log("Setting up reward 1...");
-	let tx = await newContract.addIDProperties(1,ethers.parseEther("0.1"),10, {
-		gasLimit: 100000,
-		gasPrice: ethers.parseUnits('50', 'gwei')
-	});
-	await tx.wait();
-    console.log("Reward 1 set!");
-
-	console.log("Setting up reward 2...");
-	tx = await newContract.addIDProperties(2,ethers.parseEther("0.5"),10, {
-		gasLimit: 100000,
-		gasPrice: ethers.parseUnits('50', 'gwei')
-	});
-	await tx.wait();
-    console.log("Reward 2 set!");
-
-	console.log("Setting up reward 3...");
-	tx = await newContract.addIDProperties(3,ethers.parseEther("1"),10, {
-		gasLimit: 100000,
-		gasPrice: ethers.parseUnits('50', 'gwei')
-	});
-	await tx.wait();
-    console.log("Reward 3 set!");
+interface TransactionData {
+  to: string;
+  data: string;
+  value: string;
 }
 
-main().catch(error => {
-    console.error("Error deploying contract:", error);
-});
+export class TransactionBuilder {
+  private provider: ethers.BrowserProvider;
+  private contract: ethers.Contract;
+
+  constructor(provider: ethers.BrowserProvider) {
+    this.provider = provider;
+    this.contract = new ethers.Contract(contractAddress, contractABI, this.provider);
+  }
+
+  async buildTransaction(functionName: string, args: any[], value: string = '0'): Promise<TransactionData> {
+    const signer = await this.provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    // Encode the function call
+    const data = this.contract.interface.encodeFunctionData(functionName, args);
+
+    // Estimate gas
+    const estimatedGas = await this.provider.estimateGas({
+      to: this.contract.target as string,
+      from: userAddress,
+      data: data,
+    });
+
+    // Get current gas price
+    //const feeData = await this.provider.getFeeData();
+
+    // Build the transaction object
+    const transaction: TransactionData = {
+      to: this.contract.target as string,
+      data: data,
+      value: value // Set this to the amount of ETH to send with the transaction, if any
+    };
+
+    return transaction;
+  }
+
+  async signTransaction(transaction: TransactionData): Promise<string> {
+    const signer = await this.provider.getSigner();
+    const signedTx = await signer.signTransaction(transaction);
+    return signedTx;
+  }
+
+  async executeTransaction(signedTx: string) {
+    const tx = await this.provider.broadcastTransaction(signedTx);
+    const receipt = await tx.wait();
+    return receipt;
+  }
+}

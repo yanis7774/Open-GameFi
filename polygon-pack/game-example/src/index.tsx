@@ -1,21 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './input.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { WalletProvider } from './WalletContext';
 import { RoomProvider } from './backendConnection/roomContext';
 import { UserProvider } from './UserContext';
+import ListenerInitializer from './backendConnection/listenerInitializer';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
 root.render(
-  <UserProvider>
-    <WalletProvider>
-      <RoomProvider>
+  <React.StrictMode>
+    <RoomProvider>
+      <UserProvider>
+        <ListenerInitializer></ListenerInitializer>
         <App />
-      </RoomProvider>
-    </WalletProvider>
-  </UserProvider>
+      </UserProvider>
+    </RoomProvider>
+  </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function

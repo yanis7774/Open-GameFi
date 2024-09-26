@@ -14,12 +14,10 @@ const colyseus_1 = require("colyseus");
 const MainRoomState_1 = require("./schema/MainRoomState");
 const dbUtils_1 = require("../db/dbUtils");
 const open_gamefi_1 = require("open-gamefi");
-const globals_1 = require("../globals");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 class MainRoom extends colyseus_1.Room {
     onCreate(options) {
-        (0, open_gamefi_1.setupPolygonOptions)(process.env.JSON_RPC, globals_1.contractABI, process.env.CONTRACT_ADDRESS, 100000, 50);
         this.setState(new MainRoomState_1.MainRoomState());
         this.setUp(this);
         this.setSeatReservationTime(60);
@@ -27,14 +25,8 @@ class MainRoom extends colyseus_1.Room {
         setInterval(() => {
             this.state.users.forEach((player) => {
                 if (player.user != undefined && player.client != undefined) {
-                    player.currency += player.generators * (1 + player.user.reward);
-                    player.client.send("updateClicker", {
-                        currency: player.currency,
-                        generators: player.generators,
-                        generatorPrice: this.getGeneratorCost(player.generators),
-                        rewards: player.user.reward,
-                        nftActive: player.user.nft
-                    });
+                    player.currency += this.getGeneratorValue(player) + this.getPaidGeneratorValue(player);
+                    this.updateClicker(player);
                 }
             });
         }, 1000);
@@ -48,6 +40,37 @@ class MainRoom extends colyseus_1.Room {
             });
             client.send("systemMessage", "Wallet created!");
         }));
+        this.onMessage("loginWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
+            let userState = this.state.users.get(client.sessionId);
+            if (userState.user == undefined) {
+                const userToLogin = yield (0, dbUtils_1.getUserByAddress)(msg.login);
+                client.send("systemMessage", "Logging in process...");
+                if (userToLogin) {
+                    // sent password is compared using bcrypt with the one in database
+                    userState.user = userToLogin;
+                    userState.currency = userToLogin.currency;
+                    userState.generators = userToLogin.generators;
+                    const now = new Date();
+                    userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators[0]) * (5 * userState.generators[1]) * (10 * userState.generators[2]));
+                    userState.user.lastPresence = now;
+                    yield (0, dbUtils_1.saveUserToDb)(userState.user);
+                    client.send("connectWallet", {
+                        publicKey: userToLogin.publicId,
+                        accountType: "wallet"
+                    });
+                    client.send("systemMessage", "Login Successful!");
+                    client.send("balanceUpdate", { balance: yield (0, open_gamefi_1.polygonBalance)(process.env.CALLER_PRIVATE, userToLogin.publicId), systemMessage: "Balance updated!" });
+                    // if (process.env.NFT_ON == "true")
+                    //     userState.user.nft = (await getNftBalance(userToLogin.secretId, process.env.NFT)) > 0;
+                    // else
+                    userState.user.nft = false;
+                    this.updateClicker(userState);
+                }
+                else {
+                    client.send("systemMessage", "Username or password is wrong");
+                }
+            }
+        }));
         this.onMessage("login", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             let userState = this.state.users.get(client.sessionId);
             if (userState.user == undefined) {
@@ -60,22 +83,16 @@ class MainRoom extends colyseus_1.Room {
                         userState.currency = userToLogin.currency;
                         userState.generators = userToLogin.generators;
                         const now = new Date();
-                        userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators) * (1 + userState.user.reward));
+                        userState.currency += Math.ceil(((now.getTime() - userState.user.lastPresence.getTime()) / 1000) * (userState.generators[0]) * (5 * userState.generators[1]) * (10 * userState.generators[2]));
                         userState.user.lastPresence = now;
                         yield (0, dbUtils_1.saveUserToDb)(userState.user);
                         client.send("connectWallet", {
                             publicKey: userToLogin.publicId,
                             secretKey: userToLogin.secretId,
-                            mnemonic: userToLogin.mnemonic,
-                            balance: yield (0, open_gamefi_1.polygonBalance)(userToLogin.secretId)
+                            mnemonic: userToLogin.mnemonic
                         });
-                        client.send("updateClicker", {
-                            currency: userState.currency,
-                            generators: userState.generators,
-                            generatorPrice: this.getGeneratorCost(userState.generators),
-                            rewards: userState.user.reward,
-                            nftActive: userState.user.nft
-                        });
+                        client.send("balanceUpdate", { balance: yield (0, open_gamefi_1.polygonBalance)(process.env.CALLER_PRIVATE, userToLogin.publicId), systemMessage: "Balance updated!" });
+                        this.updateClicker(userState);
                         client.send("systemMessage", "Login Successful!");
                     }
                     else {
@@ -97,12 +114,22 @@ class MainRoom extends colyseus_1.Room {
             const res = yield (0, open_gamefi_1.polygonDeposit)(msg.secret, Number(msg.amount));
             client.send("balanceUpdate", { balance: res, systemMessage: "Deposit success!" });
         }));
-        this.onMessage("rewardWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
-            client.send("systemMessage", "Rewarding...");
-            const res = yield (0, open_gamefi_1.polygonReward)(msg.secret, 1);
-            const balance = yield (0, open_gamefi_1.polygonBalance)(msg.secret);
+        this.onMessage("updateBalance", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             let userState = this.state.users.get(client.sessionId);
-            userState.user.reward = res;
+            client.send("balanceUpdate", { balance: yield (0, open_gamefi_1.polygonBalance)(process.env.CALLER_PRIVATE, userState.user.publicId), systemMessage: "Balance Updated!" });
+        }));
+        this.onMessage("updatePaidGenerator", (client, msg) => __awaiter(this, void 0, void 0, function* () {
+            let userState = this.state.users.get(client.sessionId);
+            const res = yield (0, open_gamefi_1.polygonRewardBalance)(process.env.CALLER_PRIVATE, userState.user.publicId, msg.index + 1);
+            userState.paidGenerators[msg.index] = res;
+            this.updateClicker(userState);
+        }));
+        this.onMessage("upgradeWallet", (client, msg) => __awaiter(this, void 0, void 0, function* () {
+            client.send("systemMessage", "Rewarding...");
+            const res = yield (0, open_gamefi_1.polygonReward)(msg.secret, msg.index + 1);
+            const balance = yield (0, open_gamefi_1.polygonBalance)(msg.secret, msg.public);
+            let userState = this.state.users.get(client.sessionId);
+            userState.user.paidGenerators[msg.index] = res;
             yield (0, dbUtils_1.saveUserToDb)(userState.user);
             client.send("balanceUpdate", { balance: balance, systemMessage: `Reward success! You have ${res} rewards!` });
         }));
@@ -120,32 +147,29 @@ class MainRoom extends colyseus_1.Room {
         this.onMessage("click", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             let userState = this.state.users.get(client.sessionId);
             if (userState.user != undefined) {
-                userState.currency += (1 + userState.user.reward) * (userState.user.nft ? Math.max(1, userState.user.generators) : 1);
-                client.send("updateClicker", {
-                    currency: userState.currency,
-                    generators: userState.generators,
-                    generatorPrice: this.getGeneratorCost(userState.generators),
-                    rewards: userState.user.reward,
-                    nftActive: userState.user.nft
-                });
+                userState.currency += userState.user.nft ? Math.max(1, this.getGeneratorValue(userState)) : 1;
+                this.updateClicker(userState);
             }
         }));
         this.onMessage("buyGenerator", (client, msg) => __awaiter(this, void 0, void 0, function* () {
             let userState = this.state.users.get(client.sessionId);
             if (userState.user != undefined) {
-                if (userState.currency >= this.getGeneratorCost(userState.generators)) {
-                    userState.currency -= this.getGeneratorCost(userState.generators);
-                    userState.generators++;
+                if (userState.currency >= this.getGeneratorCost(userState.generators[msg.index], msg.index)) {
+                    userState.currency -= this.getGeneratorCost(userState.generators[msg.index], msg.index);
+                    userState.generators[msg.index]++;
+                    this.updateClicker(userState);
                 }
-                client.send("updateClicker", {
-                    currency: userState.currency,
-                    generators: userState.generators,
-                    generatorPrice: this.getGeneratorCost(userState.generators),
-                    rewards: userState.user.reward,
-                    nftActive: userState.user.nft
-                });
             }
         }));
+    }
+    updateClicker(userState) {
+        userState.client.send("updateClicker", {
+            currency: userState.currency,
+            generators: userState.generators,
+            paidGenerators: userState.paidGenerators,
+            generatorPrice: [this.getGeneratorCost(userState.generators[0], 0), this.getGeneratorCost(userState.generators[1], 1), this.getGeneratorCost(userState.generators[2], 2)],
+            nftActive: userState.user.nft
+        });
     }
     setUp(room) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -186,8 +210,14 @@ class MainRoom extends colyseus_1.Room {
             console.log("Disposed lobby room successfully...");
         });
     }
-    getGeneratorCost(counter) {
-        return Math.floor(10 * Math.pow(1.2, counter));
+    getGeneratorCost(counter, index) {
+        return Math.floor(10 * Math.pow(1.2, counter) * (1 + 100 * index));
+    }
+    getGeneratorValue(userState) {
+        return (userState.generators[0]) * (5 * userState.generators[1]) * (10 * userState.generators[2]);
+    }
+    getPaidGeneratorValue(userState) {
+        return (userState.paidGenerators[0]) * (5 * userState.paidGenerators[1]) * (10 * userState.paidGenerators[2]);
     }
 }
 exports.MainRoom = MainRoom;

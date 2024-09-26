@@ -33,12 +33,12 @@ async function repoOperation(repoType: any, operation: string, data: any = undef
     }
 }
 
-export async function initUser(username: string, password: string, publicId: string, secretId: string, mnemonic: string) {
-    const existingUser = await repoOperation(User, opType.findOne, {username: `${username}`});
+export async function initUser(username: string, password: string, publicId: string, secretId: string, mnemonic: string, accType: string = "basic") {
+    const existingUser = await repoOperation(User, opType.findOne, {publicId: `${publicId}`});
     if (existingUser) {
         return existingUser;
     }
-    const user = new User(username, publicId, password, secretId, mnemonic);
+    const user = new User(username, publicId, password, secretId, mnemonic, accType);
     await repoOperation(User, opType.flush, user);
     return user;
 }
@@ -49,6 +49,13 @@ export async function saveUserToDb(user: User | User[]) {
 
 export async function getUser(username: string) {
     return await repoOperation(User,opType.findOne,{username: `${username}`});
+}
+
+export async function getUserByAddress(address: string) {
+    const user =  await repoOperation(User,opType.findOne,{publicId: `${address}`});
+    if (user)
+        return user
+    else return await initUser("","",address,"","","wallet");
 }
 
 export async function initDatabase() {

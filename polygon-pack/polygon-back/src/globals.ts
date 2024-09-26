@@ -61,7 +61,39 @@ export const contractABI = [
 				"type": "address"
 			}
 		],
+		"name": "balance_exists",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
 		"name": "balances",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "checkLockedFunds",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -110,8 +142,27 @@ export const contractABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "address_check",
+				"type": "address"
+			}
+		],
 		"name": "getBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getContractBalance",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -125,12 +176,17 @@ export const contractABI = [
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "counter_address",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "id",
 				"type": "uint256"
 			}
 		],
-		"name": "getCounter",
+		"name": "getIDAmount",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -223,6 +279,19 @@ export const contractABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "locked_funds",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -231,6 +300,25 @@ export const contractABI = [
 			}
 		],
 		"name": "withdraw",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawFreeFunds",
 		"outputs": [
 			{
 				"internalType": "bool",

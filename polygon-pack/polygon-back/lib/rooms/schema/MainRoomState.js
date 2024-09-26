@@ -12,7 +12,8 @@ class Player extends schema_1.Schema {
     constructor(client) {
         super();
         this.currency = 0;
-        this.generators = 0;
+        this.generators = [0, 0, 0];
+        this.paidGenerators = [0, 0, 0];
         this.client = client;
     }
 }
