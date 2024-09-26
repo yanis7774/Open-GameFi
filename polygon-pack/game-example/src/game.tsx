@@ -8,7 +8,7 @@ import { Sparkles, Coffee, IceCream, Cake } from 'lucide-react'
 import { useUser } from './UserContext'
 import { useRoom } from './backendConnection/roomContext'
 import { ethers } from 'ethers';
-import { contractABI } from './contract'
+import { contractABI, contractAddress } from './contract'
 
 type Generator = {
   id: string
@@ -70,7 +70,7 @@ export default function Game({}: { currency?: number, setCurrency: (value: numbe
       }
   
       try {
-        const contract = new ethers.Contract("0xFA32024489F5CA7757e6629D7193f41657f2920D", contractABI, signer);
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
         
         // Prepare the transaction
         const tx = await contract.incrementCounter(generator.index+1);

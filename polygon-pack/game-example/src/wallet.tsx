@@ -8,7 +8,7 @@ import { ArrowDownToLine, ArrowUpFromLine, Wallet as WalletIcon } from 'lucide-r
 import { useUser } from './UserContext'
 import { useRoom } from './backendConnection/roomContext'
 import { ethers } from 'ethers';
-import { contractABI } from './contract'
+import { contractABI, contractAddress } from './contract'
 
 export default function Wallet({ currency = 0, setCurrency }: { currency?: number, setCurrency: (value: number | ((prevValue: number) => number)) => void }) {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
@@ -44,7 +44,7 @@ export default function Wallet({ currency = 0, setCurrency }: { currency?: numbe
         }
     
         try {
-          const contract = new ethers.Contract("0xFA32024489F5CA7757e6629D7193f41657f2920D", contractABI, signer);
+          const contract = new ethers.Contract(contractAddress, contractABI, signer);
           
           // Prepare the transaction
           const depositAmount = ethers.parseEther(`${amount}`);
@@ -73,7 +73,7 @@ export default function Wallet({ currency = 0, setCurrency }: { currency?: numbe
     const amount = parseFloat(withdrawAmount)
     if (!isNaN(amount) && amount > 0 && amount <= balance) {
       if (accountType === "wallet") {
-        const contract = new ethers.Contract("0xFA32024489F5CA7757e6629D7193f41657f2920D", contractABI, signer);
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
           
         // Prepare the transaction
         const tx = await contract.withdraw(ethers.parseEther(`${amount}`));

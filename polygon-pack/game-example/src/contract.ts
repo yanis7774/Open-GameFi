@@ -1,7 +1,3 @@
-import { ethers } from 'ethers';
-
-// You'll need to replace these with your actual contract ABI and address
-// Empty for now
 export const contractABI = [
 	{
 		"inputs": [
@@ -333,59 +329,4 @@ export const contractABI = [
 		"type": "function"
 	}
 ]
-const contractAddress = '0xYourContractAddressHere';
-
-interface TransactionData {
-  to: string;
-  data: string;
-  value: string;
-}
-
-export class TransactionBuilder {
-  private provider: ethers.BrowserProvider;
-  private contract: ethers.Contract;
-
-  constructor(provider: ethers.BrowserProvider) {
-    this.provider = provider;
-    this.contract = new ethers.Contract(contractAddress, contractABI, this.provider);
-  }
-
-  async buildTransaction(functionName: string, args: any[], value: string = '0'): Promise<TransactionData> {
-    const signer = await this.provider.getSigner();
-    const userAddress = await signer.getAddress();
-
-    // Encode the function call
-    const data = this.contract.interface.encodeFunctionData(functionName, args);
-
-    // Estimate gas
-    const estimatedGas = await this.provider.estimateGas({
-      to: this.contract.target as string,
-      from: userAddress,
-      data: data,
-    });
-
-    // Get current gas price
-    //const feeData = await this.provider.getFeeData();
-
-    // Build the transaction object
-    const transaction: TransactionData = {
-      to: this.contract.target as string,
-      data: data,
-      value: value // Set this to the amount of ETH to send with the transaction, if any
-    };
-
-    return transaction;
-  }
-
-  async signTransaction(transaction: TransactionData): Promise<string> {
-    const signer = await this.provider.getSigner();
-    const signedTx = await signer.signTransaction(transaction);
-    return signedTx;
-  }
-
-  async executeTransaction(signedTx: string) {
-    const tx = await this.provider.broadcastTransaction(signedTx);
-    const receipt = await tx.wait();
-    return receipt;
-  }
-}
+export const contractAddress = '0xFA32024489F5CA7757e6629D7193f41657f2920D';
